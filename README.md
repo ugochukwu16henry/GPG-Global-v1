@@ -30,6 +30,61 @@ flutter run
 - `lib/core/theme/` – colors and app theme
 - `lib/features/home/` – dashboard screen, widgets, Riverpod providers
 
+## Deploy to Vercel (Flutter Web)
+
+This repo is configured for Vercel using:
+
+- `vercel.json`
+- `scripts/vercel-install.sh`
+- `scripts/vercel-build.sh`
+
+### One-time setup
+
+1. Install Vercel CLI:
+
+```bash
+npm i -g vercel
+```
+
+2. From project root:
+
+```bash
+vercel
+```
+
+3. For production deploy:
+
+```bash
+vercel --prod
+```
+
+### Import from GitHub (Vercel UI)
+
+Use these values in the Vercel “New Project” form:
+
+- Repository: `ugochukwu16henry/GPG-Global-v1`
+- Branch: `main`
+- Project Name: `gpg-global-v1`
+- Application Preset: `Other`
+- Root Directory: `./`
+
+Environment Variable (replace placeholder):
+
+- Key: `GPG_BACKEND_URL`
+- Value: `https://<your-backend-domain>`
+
+If Vercel asks for commands explicitly:
+
+- Install Command: `bash ./scripts/vercel-install.sh`
+- Build Command: `bash ./scripts/vercel-build.sh`
+- Output Directory: `build/web`
+
+### Notes
+
+- Output directory is `build/web`.
+- SPA rewrite is enabled so Flutter routes (e.g. `/talent/:id`) resolve to `index.html`.
+- The Node backend in `backend/` is not ideal for Vercel long-running sockets. Keep backend on a server host (Render/Fly/Railway/VM) and point Flutter web to that API.
+
 ## Deep Linking (Talent + Mission Group)
 
 Implemented app routes:
