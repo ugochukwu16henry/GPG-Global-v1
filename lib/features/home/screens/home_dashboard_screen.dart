@@ -217,6 +217,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   }
 
   Widget _buildBentoMobile(BoxConstraints constraints) {
+    final feedHeight = (constraints.maxHeight * 0.65).clamp(260.0, 520.0);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -241,11 +242,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
           const SizedBox(height: 16),
           const GatheringPlaceHierarchyPanel(),
           const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: constraints.maxHeight - 220,
-            ),
-            child: GatheringFeed(),
+          SizedBox(
+            height: feedHeight,
+            child: const GatheringFeed(),
           ),
         ],
       ),
