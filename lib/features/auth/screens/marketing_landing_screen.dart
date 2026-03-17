@@ -7,59 +7,65 @@ class MarketingLandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 820;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(
-                            'GP_Global_logo.png',
-                            width: 36,
-                            height: 36,
-                            fit: BoxFit.cover,
-                          ),
+                  Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          'GP_Global_logo.png',
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.cover,
                         ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'GPG Gathering Place Global',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-                          ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'GPG Gathering Place Global',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
                         ),
-                      ],
-                    ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pushNamed('/about'),
+                        child: const Text('About'),
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pushNamed('/about'),
-                    child: const Text('About'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.tonal(
-                    onPressed: () => Navigator.of(context).pushNamed('/signin-user'),
-                    child: const Text('Sign In User'),
-                  ),
-                  const SizedBox(width: 6),
-                  FilledButton.tonal(
-                    onPressed: () => Navigator.of(context).pushNamed('/signup-user'),
-                    child: const Text('Sign Up User'),
-                  ),
-                  const SizedBox(width: 6),
-                  FilledButton.tonal(
-                    onPressed: () => Navigator.of(context).pushNamed('/signin-moderator'),
-                    child: const Text('Sign In Moderator'),
-                  ),
-                  const SizedBox(width: 6),
-                  FilledButton.tonal(
-                    onPressed: () => Navigator.of(context).pushNamed('/signup-moderator'),
-                    child: const Text('Sign Up Moderator'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+                    children: [
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context).pushNamed('/signin-user'),
+                        child: const Text('Sign In User'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context).pushNamed('/signup-user'),
+                        child: const Text('Sign Up User'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context).pushNamed('/signin-moderator'),
+                        child: const Text('Sign In Moderator'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context).pushNamed('/signup-moderator'),
+                        child: const Text('Sign Up Moderator'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -84,10 +90,14 @@ class MarketingLandingScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
+                        Text(
                           'A Safe, Spiritual, and Social Community',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.primaryNavy),
+                          style: TextStyle(
+                            fontSize: compact ? 24 : 30,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primaryNavy,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         const Text(
@@ -110,8 +120,9 @@ class MarketingLandingScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
+            ),
             ),
             const Divider(height: 1),
             Padding(

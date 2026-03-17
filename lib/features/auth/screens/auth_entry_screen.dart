@@ -131,23 +131,52 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
                   decoration: const InputDecoration(labelText: 'Phone Number'),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _otpController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'OTP Code'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
-                      onPressed: authState.isLoading
-                          ? null
-                          : () => ref.read(backendAuthControllerProvider.notifier).sendOtp(_phoneController.text.trim()),
-                      child: const Text('Send OTP'),
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 380;
+                    if (compact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextField(
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'OTP Code'),
+                          ),
+                          const SizedBox(height: 8),
+                          FilledButton.tonal(
+                            onPressed: authState.isLoading
+                                ? null
+                                : () => ref
+                                    .read(backendAuthControllerProvider.notifier)
+                                    .sendOtp(_phoneController.text.trim()),
+                            child: const Text('Send OTP'),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'OTP Code'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonal(
+                          onPressed: authState.isLoading
+                              ? null
+                              : () => ref
+                                  .read(backendAuthControllerProvider.notifier)
+                                  .sendOtp(_phoneController.text.trim()),
+                          child: const Text('Send OTP'),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 if (authState.devOtpPreview != null) ...[
                   const SizedBox(height: 8),

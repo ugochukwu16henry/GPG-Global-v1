@@ -112,104 +112,118 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 760;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              'GP_Global_logo.png',
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'GPG Gathering Place Global',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryNavy,
-                  ),
-                ),
-                Text(
-                  'Welcome Home · Glad you\'re here',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const AdminCommandCenterScreen(),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primaryNavy.withValues(alpha: 0.85),
+          Row(
+            children: [
+              ClipRRect(
                 borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'GP_Global_logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                ),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GNexusLogo(
-                    size: 20,
-                    variant: LogoSurfaceVariant.controlRoomMonochrome,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'Control Room',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'GPG Gathering Place Global',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryNavy,
+                      ),
                     ),
-                  ),
-                ],
+                    Text(
+                      'Welcome Home · Glad you\'re here',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: () => Navigator.of(context).pushNamed('/app-flow-map'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.pathwayAmber.withValues(alpha: 0.2),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+            children: [
+              InkWell(
                 borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.hub_rounded, size: 16, color: AppColors.primaryNavy),
-                  SizedBox(width: 6),
-                  Text(
-                    'Flow Map',
-                    style: TextStyle(
-                      color: AppColors.primaryNavy,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdminCommandCenterScreen(),
                     ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryNavy.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ],
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GNexusLogo(
+                        size: 20,
+                        variant: LogoSurfaceVariant.controlRoomMonochrome,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Control Room',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => Navigator.of(context).pushNamed('/app-flow-map'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.pathwayAmber.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.hub_rounded, size: 16, color: AppColors.primaryNavy),
+                      SizedBox(width: 6),
+                      Text(
+                        'Flow Map',
+                        style: TextStyle(
+                          color: AppColors.primaryNavy,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -217,26 +231,33 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   }
 
   Widget _buildBentoMobile(BoxConstraints constraints) {
+    final width = MediaQuery.sizeOf(context).width;
+    final stackCards = width < 390;
     final feedHeight = (constraints.maxHeight * 0.65).clamp(260.0, 520.0);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 5,
-                child: ProfileCard(),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 4,
-                child: PathwayProgressTracker(),
-              ),
-            ],
-          ),
+          if (stackCards) ...[
+            ProfileCard(),
+            const SizedBox(height: 12),
+            PathwayProgressTracker(),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: ProfileCard(),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 4,
+                  child: PathwayProgressTracker(),
+                ),
+              ],
+            ),
           const SizedBox(height: 16),
           const LiveEventsAndMarketplaceDemo(),
           const SizedBox(height: 16),
