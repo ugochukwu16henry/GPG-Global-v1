@@ -136,3 +136,84 @@ final backendDemoControllerProvider =
     StateNotifierProvider<BackendDemoController, BackendDemoState>((ref) {
   return BackendDemoController(ref);
 });
+
+class BackendAuthState {
+  const BackendAuthState({
+    this.isLoading = false,
+    this.phone,
+    this.devOtpPreview,
+    this.message,
+    this.error,
+  });
+
+  final bool isLoading;
+  final String? phone;
+  final String? devOtpPreview;
+  final String? message;
+  final String? error;
+
+  BackendAuthState copyWith({
+    bool? isLoading,
+    String? phone,
+    String? devOtpPreview,
+    String? message,
+    String? error,
+  }) {
+    return BackendAuthState(
+      isLoading: isLoading ?? this.isLoading,
+      phone: phone ?? this.phone,
+      devOtpPreview: devOtpPreview ?? this.devOtpPreview,
+      message: message,
+      error: error,
+    );
+  }
+}
+
+class BackendAuthController extends StateNotifier<BackendAuthState> {
+  BackendAuthController(this._read) : super(const BackendAuthState());
+
+  final Ref _read;
+
+  Future<void> sendOtp(String phone) async {
+    state = state.copyWith(isLoading: true, error: null, message: null);
+    try {
+      final gateway = _read.read(backendGatewayProvider);
+      final preview = await gateway.sendPhoneOtp(phone);
+      state = state.copyWith(
+        isLoading: false,
+        phone: phone,
+        devOtpPreview: preview,
+        message: 'OTP sent successfully.',
+      );
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        error: error.toString(),
+      );
+    }
+  }
+
+  Future<void> verifyOtp({required String phone, required String otpCode}) async {
+    state = state.copyWith(isLoading: true, error: null, message: null);
+    try {
+      final gateway = _read.read(backendGatewayProvider);
+      final userId = await gateway.verifyPhoneOtp(phone: phone, otpCode: otpCode);
+      _read.read(backendUserIdProvider.notifier).state = userId;
+      state = state.copyWith(
+        isLoading: false,
+        phone: phone,
+        message: 'Phone verified. Active user: $userId',
+      );
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        error: error.toString(),
+      );
+    }
+  }
+}
+
+final backendAuthControllerProvider =
+    StateNotifierProvider<BackendAuthController, BackendAuthState>((ref) {
+  return BackendAuthController(ref);
+});

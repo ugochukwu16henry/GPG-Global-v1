@@ -2,6 +2,8 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../backend/providers/backend_live_providers.dart';
+import '../screens/privacy_safety_screen.dart';
 import '../providers/mock_data_provider.dart';
 import 'glass_card.dart';
 
@@ -15,22 +17,115 @@ class ProfileCard extends ConsumerStatefulWidget {
 
 class _ProfileCardState extends ConsumerState<ProfileCard> {
   ConfettiController? _confettiController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _otpController;
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 1));
+    _phoneController = TextEditingController();
+    _otpController = TextEditingController();
+  }
+
+  Future<void> _persistProfile() async {
+    final profile = ref.read(profileProvider);
+    final gateway = ref.read(backendGatewayProvider);
+    final userId = ref.read(backendUserIdProvider);
+
+    try {
+      await gateway.setUserProfile(
+        userId: userId,
+        displayName: profile.displayName,
+        isMember: profile.memberStatusLabel == 'Member',
+        missionId: 'demo-mission-id',
+        servedMission: profile.servedMission,
+        pathwayStatus: profile.pathwayStatus == PathwayStatus.connect ? 'CONNECT' : 'DEGREE',
+        isPathwayConnect: profile.isPathwayConnect,
+        isDegree: profile.isDegree,
+        isAlumni: profile.isAlumni,
+        academicFocus: profile.academicFocus,
+        country: profile.country,
+        state: profile.state,
+        lga: profile.lga,
+        relationshipStatus:
+            profile.relationshipStatus == RelationshipStatus.single ? 'SINGLE' : 'MARRIED',
+        gender: profile.gender == Gender.male ? 'MALE' : 'FEMALE',
+        allowsBirthdayBroadcast: profile.allowsBirthdayBroadcast,
+        safeSearchFemaleOnly: profile.safeSearchFemaleOnly,
+        safeSearchVerifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profile sync failed: $error')),
+      );
+    }
+  }
+
+  Future<void> _persistVisibility(String fieldKey, VisibilityLevel level) async {
+    final gateway = ref.read(backendGatewayProvider);
+    final userId = ref.read(backendUserIdProvider);
+    final visibility = switch (level) {
+      VisibilityLevel.everyone => 'EVERYONE',
+      VisibilityLevel.connections => 'CONNECTIONS',
+      VisibilityLevel.onlyMe => 'ONLY_ME',
+    };
+
+    try {
+      await gateway.setFieldVisibility(
+        userId: userId,
+        fieldKey: fieldKey,
+        visibility: visibility,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Visibility sync failed: $error')),
+      );
+    }
+  }
+
+  Future<void> _persistSafetyMode({
+    required bool femaleOnly,
+    required bool verifiedMembersOnly,
+  }) async {
+    final gateway = ref.read(backendGatewayProvider);
+    final userId = ref.read(backendUserIdProvider);
+
+    try {
+      await gateway.setSafetyMode(
+        userId: userId,
+        femaleOnly: femaleOnly,
+        verifiedMembersOnly: verifiedMembersOnly,
+      );
+      await _persistProfile();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Safety mode sync failed: $error')),
+      );
+    }
   }
 
   @override
   void dispose() {
     _confettiController?.dispose();
+    _phoneController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
   void _onToggleStatus() {
     final wasConnect = ref.read(profileProvider).pathwayStatus == PathwayStatus.connect;
     ref.read(profileProvider.notifier).toggleStatus();
+    _persistProfile();
     if (wasConnect) {
       _confettiController?.play();
     }
@@ -39,6 +134,7 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
+    final auth = ref.watch(backendAuthControllerProvider);
     return Stack(
       alignment: Alignment.topCenter,
       children: [
@@ -150,6 +246,7 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                         ref.read(profileProvider.notifier).setPathwayJourney(
                               isPathwayConnect: value,
                             );
+                        _persistProfile();
                       },
                     ),
                   ),
@@ -160,6 +257,7 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                       value: profile.isDegree,
                       onChanged: (value) {
                         ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
+                        _persistProfile();
                       },
                     ),
                   ),
@@ -170,6 +268,7 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                       value: profile.isAlumni,
                       onChanged: (value) {
                         ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
+                        _persistProfile();
                       },
                     ),
                   ),
@@ -203,6 +302,10 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                       value: profile.safeSearchFemaleOnly,
                       onChanged: (value) {
                         ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
+                        _persistSafetyMode(
+                          femaleOnly: value,
+                          verifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
+                        );
                       },
                     ),
                   ),
@@ -215,10 +318,112 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                         ref
                             .read(profileProvider.notifier)
                             .setSafetyMode(verifiedMembersOnly: value);
+                        _persistSafetyMode(
+                          femaleOnly: profile.safeSearchFemaleOnly,
+                          verifiedMembersOnly: value,
+                        );
                       },
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(height: 20),
+              const Text(
+                'Phone Verification (OTP)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                  labelText: 'Phone Number',
+                  hintText: '+2348012345678',
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        labelText: 'OTP Code',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.tonal(
+                    onPressed: auth.isLoading
+                        ? null
+                        : () {
+                            ref
+                                .read(backendAuthControllerProvider.notifier)
+                                .sendOtp(_phoneController.text.trim());
+                          },
+                    child: const Text('Send OTP'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonal(
+                  onPressed: auth.isLoading
+                      ? null
+                      : () {
+                          ref.read(backendAuthControllerProvider.notifier).verifyOtp(
+                                phone: _phoneController.text.trim(),
+                                otpCode: _otpController.text.trim(),
+                              );
+                        },
+                  child: const Text('Verify OTP & Use Account'),
+                ),
+              ),
+              if (auth.devOtpPreview != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Dev OTP preview: ${auth.devOtpPreview}',
+                  style: const TextStyle(fontSize: 10, color: AppColors.pathwayAmber),
+                ),
+              ],
+              if (auth.message != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  auth.message!,
+                  style: const TextStyle(fontSize: 10, color: AppColors.stewardshipGreen),
+                ),
+              ],
+              if (auth.error != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  auth.error!,
+                  style: const TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonal(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacySafetyScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Open Privacy & Safety'),
+                ),
               ),
               const SizedBox(height: 10),
               Material(
@@ -341,22 +546,47 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
       VisibilityLevel.connections => 'Connections',
       VisibilityLevel.onlyMe => 'Only Me',
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.visibility_rounded, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            '$field · $label',
-            style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
-          ),
-        ],
+    return PopupMenuButton<VisibilityLevel>(
+      onSelected: (nextLevel) {
+        final fieldKey = switch (field) {
+          'Blood Group' => 'bloodGroup',
+          'Genotype' => 'genotype',
+          _ => 'age',
+        };
+        ref.read(profileProvider.notifier).setVisibility(fieldKey, nextLevel);
+        _persistVisibility(fieldKey, nextLevel);
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: VisibilityLevel.everyone,
+          child: Text('Everyone'),
+        ),
+        PopupMenuItem(
+          value: VisibilityLevel.connections,
+          child: Text('Connections'),
+        ),
+        PopupMenuItem(
+          value: VisibilityLevel.onlyMe,
+          child: Text('Only Me'),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.visibility_rounded, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              '$field · $label',
+              style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }

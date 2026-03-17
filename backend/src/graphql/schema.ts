@@ -5,6 +5,8 @@ import { privacyVaultService } from '../services/privacyVaultService.js';
 import { paymentService } from '../services/paymentService.js';
 import { chatService } from '../services/chatService.js';
 import { feedService } from '../services/feedService.js';
+import { adminService } from '../services/adminService.js';
+import { boundaryService } from '../services/boundaryService.js';
 
 export const typeDefs = `
   enum PathwayStatus {
@@ -32,6 +34,21 @@ export const typeDefs = `
     EVERYONE
     CONNECTIONS
     ONLY_ME
+  }
+
+  enum BlockReasonCode {
+    SPAM
+    HARASSMENT
+    INAPPROPRIATE_CONTENT
+    OTHER
+  }
+
+  enum ReportReasonCode {
+    SPAM
+    HARASSMENT
+    SCAM
+    INAPPROPRIATE_CONTENT
+    OTHER
   }
 
   type User {
@@ -127,6 +144,23 @@ export const typeDefs = `
     comments: [FeedComment!]!
   }
 
+  type BlockedAccount {
+    userId: ID!
+    displayName: String!
+    profilePictureUrl: String
+    blockedAt: String!
+  }
+
+  type AdminActionLog {
+    id: ID!
+    adminUserId: ID!
+    action: String!
+    targetUserId: ID
+    targetEntity: String!
+    reason: String
+    createdAt: String!
+  }
+
   type MarketplaceCheckout {
     checkoutUrl: String!
   }
@@ -159,6 +193,8 @@ export const typeDefs = `
       gender: Gender
     ): [CommunitySearchUser!]!
     feed(limit: Int = 20): [FeedPost!]!
+    blockedAccounts(userId: ID!): [BlockedAccount!]!
+    adminActionLogs(limit: Int = 50): [AdminActionLog!]!
     readSensitiveField(ownerUserId: ID!, field: SensitiveField!): String
   }
 
@@ -203,6 +239,20 @@ export const typeDefs = `
     reactToPost(postId: ID!, userId: ID!, kind: String!): Boolean!
     resharePost(postId: ID!, userId: ID!, targetGroupId: String): Boolean!
     addComment(postId: ID!, userId: ID!, body: String!): Boolean!
+
+    adminSuspendUser(adminUserId: ID!, userId: ID!, hours: Int!, reason: String): Boolean!
+    adminShadowBanUser(adminUserId: ID!, userId: ID!, reason: String): Boolean!
+    adminDeleteBanUser(adminUserId: ID!, userId: ID!, phone: String, deviceId: String, reason: String): Boolean!
+    adminApproveMarketplace(adminUserId: ID!, userId: ID!, certificateTitle: String!): Boolean!
+    adminGrantMeritMarketplace(adminUserId: ID!, userId: ID!, certificateTitle: String!, reason: String!): Boolean!
+    adminSetTalentFeatured(adminUserId: ID!, userId: ID!, isFeatured: Boolean!): Boolean!
+    adminReviewAd(adminUserId: ID!, adId: ID!, targeting: String!, approved: Boolean!, note: String): Boolean!
+
+    blockUser(blockerId: ID!, blockedId: ID!, reasonCode: BlockReasonCode): Boolean!
+    unblockUser(blockerId: ID!, blockedId: ID!): Boolean!
+    muteUser(muterId: ID!, mutedId: ID!): Boolean!
+    unmuteUser(muterId: ID!, mutedId: ID!): Boolean!
+    reportUser(reporterId: ID!, reportedId: ID!, reasonCode: ReportReasonCode!, detail: String): Boolean!
 
     sendChatMessage(senderUserId: ID!, roomId: String!, body: String!): ChatResult!
   }
@@ -257,9 +307,13 @@ export const resolvers = {
     },
     pathwayPeerMatch: async (
       _: unknown,
-      args: { academicFocus: string; state?: string; lga?: string }
+      args: { academicFocus: string; state?: string; lga?: string },
+      context: { userId: string }
     ) => {
-      const summary = await missionSearchService.pathwayPeerMatch(args);
+      const summary = await missionSearchService.pathwayPeerMatch({
+        ...args,
+        viewerUserId: context.userId == 'anonymous' ? undefined : context.userId,
+      });
       return { summary };
     },
     communitySearch: async (
@@ -270,10 +324,17 @@ export const resolvers = {
         relationshipStatus?: 'SINGLE' | 'MARRIED';
         talent?: string;
         gender?: 'MALE' | 'FEMALE';
-      }
+      },
+      context: { userId: string }
     ) => {
+      const blockedIds = await boundaryService.blockedUserIdsForViewer(context.userId);
       return prisma.user.findMany({
         where: {
+          id: blockedIds.isEmpty
+              ? undefined
+              : {
+                  notIn: blockedIds.toList(),
+                },
           pathwayStatus: args.education,
           missionId: args.missionId,
           relationshipStatus: args.relationshipStatus,
@@ -291,8 +352,20 @@ export const resolvers = {
         take: 50,
       });
     },
-    feed: async (_: unknown, args: { limit?: number }) => {
-      return feedService.feed(args.limit ?? 20);
+    feed: async (_: unknown, args: { limit?: number }, context: { userId: string }) => {
+      return feedService.feed(args.limit ?? 20, context.userId == 'anonymous' ? undefined : context.userId);
+    },
+    blockedAccounts: async (_: unknown, args: { userId: string }) => {
+      const rows = await boundaryService.blockedAccounts(args.userId);
+      return rows.map((row) => ({
+        userId: row.blocked.id,
+        displayName: row.blocked.displayName,
+        profilePictureUrl: row.blocked.profilePictureUrl,
+        blockedAt: row.createdAt.toISOString(),
+      }));
+    },
+    adminActionLogs: (_: unknown, args: { limit?: number }) => {
+      return adminService.recentLogs(args.limit ?? 50);
     },
     readSensitiveField: (_: unknown, args: { ownerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: { userId: string }) => {
       return privacyVaultService.readSensitiveField(context.userId, args.ownerUserId, args.field);
@@ -442,6 +515,86 @@ export const resolvers = {
     },
     addComment: async (_: unknown, args: { postId: string; userId: string; body: string }) => {
       await feedService.addComment(args);
+      return true;
+    },
+    adminSuspendUser: async (
+      _: unknown,
+      args: { adminUserId: string; userId: string; hours: number; reason?: string }
+    ) => {
+      await adminService.suspendUser(args);
+      return true;
+    },
+    adminShadowBanUser: async (
+      _: unknown,
+      args: { adminUserId: string; userId: string; reason?: string }
+    ) => {
+      await adminService.shadowBanUser(args);
+      return true;
+    },
+    adminDeleteBanUser: async (
+      _: unknown,
+      args: { adminUserId: string; userId: string; phone?: string; deviceId?: string; reason?: string }
+    ) => {
+      await adminService.deleteBanUser(args);
+      return true;
+    },
+    adminApproveMarketplace: async (
+      _: unknown,
+      args: { adminUserId: string; userId: string; certificateTitle: string }
+    ) => {
+      await adminService.approveMarketplace(args);
+      return true;
+    },
+    adminGrantMeritMarketplace: async (
+      _: unknown,
+      args: { adminUserId: string; userId: string; certificateTitle: string; reason: string }
+    ) => {
+      await adminService.grantMeritMarketplace(args);
+      return true;
+    },
+    adminSetTalentFeatured: async (
+      _: unknown,
+      args: { adminUserId: string; userId: string; isFeatured: boolean }
+    ) => {
+      await adminService.setTalentFeatured(args);
+      return true;
+    },
+    adminReviewAd: async (
+      _: unknown,
+      args: { adminUserId: string; adId: string; targeting: string; approved: boolean; note?: string }
+    ) => {
+      await adminService.reviewAd(args);
+      return true;
+    },
+    blockUser: async (
+      _: unknown,
+      args: { blockerId: string; blockedId: string; reasonCode?: 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE_CONTENT' | 'OTHER' }
+    ) => {
+      await boundaryService.blockUser(args);
+      return true;
+    },
+    unblockUser: async (_: unknown, args: { blockerId: string; blockedId: string }) => {
+      await boundaryService.unblockUser(args);
+      return true;
+    },
+    muteUser: async (_: unknown, args: { muterId: string; mutedId: string }) => {
+      await boundaryService.muteUser(args);
+      return true;
+    },
+    unmuteUser: async (_: unknown, args: { muterId: string; mutedId: string }) => {
+      await boundaryService.unmuteUser(args);
+      return true;
+    },
+    reportUser: async (
+      _: unknown,
+      args: {
+        reporterId: string;
+        reportedId: string;
+        reasonCode: 'SPAM' | 'HARASSMENT' | 'SCAM' | 'INAPPROPRIATE_CONTENT' | 'OTHER';
+        detail?: string;
+      }
+    ) => {
+      await boundaryService.reportUser(args);
       return true;
     },
     sendChatMessage: async (_: unknown, args: { senderUserId: string; roomId: string; body: string }) => {

@@ -46,6 +46,34 @@ enum ChatViolationSeverity {
   HIGH
 }
 
+enum MarketplaceApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  MERIT_GRANTED
+}
+
+enum AdReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BlockReasonCode {
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
+enum ReportReasonCode {
+  SPAM
+  HARASSMENT
+  SCAM
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
 model User {
   id                 String               @id @default(cuid())
   phone              String               @unique
@@ -87,6 +115,14 @@ model User {
   postComments       PostComment[]
   postReactions      PostReaction[]
   postReshares       PostReshare[]
+  disciplineState    UserDisciplineState?
+  adminActions       AdminActionLog[] @relation("AdminActorActions")
+  blockedUsers       BlockRelation[] @relation("Blocker")
+  blockedByUsers     BlockRelation[] @relation("Blocked")
+  mutedUsers         MuteRelation[] @relation("Muter")
+  mutedByUsers       MuteRelation[] @relation("Muted")
+  reportsSubmitted   UserReport[] @relation("Reporter")
+  reportsReceived    UserReport[] @relation("Reported")
 }
 
 model Mission {
@@ -253,4 +289,127 @@ model ModerationFlag {
   createdAt       DateTime @default(now())
 
   chatMessage     ChatMessage @relation(fields: [chatMessageId], references: [id])
+}
+
+model UserDisciplineState {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  suspendedUntil    DateTime?
+  isShadowBanned    Boolean  @default(false)
+  isDeletedBanned   Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+model BannedIdentity {
+  id                String   @id @default(cuid())
+  phone             String?  @unique
+  deviceId          String?  @unique
+  reason            String
+  bannedByAdminId   String
+  createdAt         DateTime @default(now())
+}
+
+model MarketplaceApproval {
+  id                String   @id @default(cuid())
+  userId            String
+  certificateTitle  String
+  status            MarketplaceApprovalStatus @default(PENDING)
+  reviewedByAdminId String?
+  reviewedAt        DateTime?
+  createdAt         DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+model TalentFeature {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  isFeatured        Boolean  @default(false)
+  updatedByAdminId  String
+  updatedAt         DateTime @updatedAt
+}
+
+model AdModerationReview {
+  id                String   @id @default(cuid())
+  externalAdId      String   @unique
+  targeting         String
+  note              String?
+  status            AdReviewStatus @default(PENDING)
+  reviewedByAdminId String?
+  reviewedAt        DateTime?
+  createdAt         DateTime @default(now())
+}
+
+model AdminActionLog {
+  id                String   @id @default(cuid())
+  adminUserId       String
+  action            String
+  targetUserId      String?
+  targetEntity      String
+  reason            String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  adminUser         User     @relation("AdminActorActions", fields: [adminUserId], references: [id])
+
+  @@index([createdAt])
+  @@index([adminUserId, action])
+}
+
+model BlockRelation {
+  id            String @id @default(cuid())
+  blockerId     String
+  blockedId     String
+  reasonCode    BlockReasonCode?
+  isActive      Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  unblockedAt   DateTime?
+
+  blocker       User @relation("Blocker", fields: [blockerId], references: [id])
+  blocked       User @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId, createdAt])
+}
+
+model MuteRelation {
+  id            String @id @default(cuid())
+  muterId       String
+  mutedId       String
+  isActive      Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  muter         User @relation("Muter", fields: [muterId], references: [id])
+  muted         User @relation("Muted", fields: [mutedId], references: [id])
+
+  @@unique([muterId, mutedId])
+}
+
+model UserReport {
+  id            String @id @default(cuid())
+  reporterId    String
+  reportedId    String
+  reasonCode    ReportReasonCode
+  detail        String?
+  createdAt     DateTime @default(now())
+
+  reporter      User @relation("Reporter", fields: [reporterId], references: [id])
+  reported      User @relation("Reported", fields: [reportedId], references: [id])
+
+  @@index([reportedId, createdAt])
+}
+
+model HighBlockAlert {
+  id                 String @id @default(cuid())
+  targetUserId       String
+  blockersLast24h    Int
+  flaggedAt          DateTime @default(now())
+  reviewed           Boolean @default(false)
+
+  @@unique([targetUserId, flaggedAt])
+  @@index([targetUserId, reviewed])
 }

@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { moderationService } from './moderationService.js';
+import { boundaryService } from './boundaryService.js';
 
 export const feedService = {
   async createPost({
@@ -91,9 +92,20 @@ export const feedService = {
     });
   },
 
-  async feed(limit: number) {
-    return prisma.post.findMany({
+  async feed(limit: number, viewerUserId?: string) {
+    final blockedIds = viewerUserId == null
+        ? <String>{}
+        : await boundaryService.blockedUserIdsForViewer(viewerUserId);
+
+    final rows = await prisma.post.findMany({
       take: limit,
+      where: {
+        authorUserId: blockedIds.isEmpty
+            ? undefined
+            : {
+                notIn: blockedIds.toList(),
+              },
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         author: {
@@ -117,5 +129,20 @@ export const feedService = {
         reshares: true,
       },
     });
+
+    if (blockedIds.isEmpty) {
+      return rows;
+    }
+
+    return rows
+        .map(
+          (post) => {
+            ...post,
+            'comments': post.comments
+                .where((comment) => !blockedIds.contains(comment.userId))
+                .toList(),
+          },
+        )
+        .toList(growable: false);
   },
 };

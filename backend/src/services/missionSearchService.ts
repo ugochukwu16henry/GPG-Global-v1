@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { neo4jDriver } from '../lib/neo4j.js';
+import { boundaryService } from './boundaryService.js';
 
 export const missionSearchService = {
   async suggestMissions(query: string) {
@@ -45,10 +46,14 @@ export const missionSearchService = {
       return [];
     }
 
+    const blockedIds = await boundaryService.blockedUserIdsForViewer(userId);
+
     return prisma.user.findMany({
       where: {
         missionId: currentUser.missionId,
-        id: { not: userId }
+        id: {
+          notIn: [userId, ...blockedIds],
+        },
       },
       select: {
         id: true,
@@ -65,13 +70,24 @@ export const missionSearchService = {
     academicFocus,
     state,
     lga,
+    viewerUserId,
   }: {
     academicFocus: string;
     state?: string;
     lga?: string;
+    viewerUserId?: string;
   }) {
+    const blockedIds = viewerUserId == null
+        ? <String>{}
+        : await boundaryService.blockedUserIdsForViewer(viewerUserId);
+
     const count = await prisma.user.count({
       where: {
+        id: blockedIds.isEmpty
+            ? undefined
+            : {
+                notIn: blockedIds.toList(),
+              },
         isDegree: true,
         academicFocus: {
           equals: academicFocus,
