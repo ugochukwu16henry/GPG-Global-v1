@@ -226,7 +226,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                         : () => ref
                             .read(backendDemoControllerProvider.notifier)
                             .createCheckout(),
-                    child: const Text('Create $2 Checkout'),
+                    child: const Text('Create \$2 Checkout'),
                   ),
                   FilledButton.tonal(
                     onPressed: () => _launchCheckout(context, backendState.checkoutUrl),
