@@ -196,6 +196,7 @@ class FeedItem {
     this.moderationTags = const <String>[],
     this.timestampComments = const <VideoTimestampComment>[],
     this.hireEnabled = false,
+    this.availableResolutions = const <String>['240p', '480p', '720p'],
   });
 
   final String id;
@@ -208,6 +209,7 @@ class FeedItem {
   final List<String> moderationTags;
   final List<VideoTimestampComment> timestampComments;
   final bool hireEnabled;
+  final List<String> availableResolutions;
 }
 
 enum VideoAspect {
@@ -243,6 +245,7 @@ final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
         VideoTimestampComment(seconds: 12, body: 'Love this intro!'),
         VideoTimestampComment(seconds: 45, body: 'I felt this testimony.'),
       ],
+      availableResolutions: ['240p', '480p', '720p'],
     ),
     FeedItem(
       id: '2',
@@ -258,6 +261,7 @@ final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
       timestampComments: [
         VideoTimestampComment(seconds: 30, body: 'This solved my confusion.'),
       ],
+      availableResolutions: ['240p', '480p', '720p', '1080p'],
     ),
     FeedItem(
       id: '3',
@@ -273,6 +277,7 @@ final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
       timestampComments: [
         VideoTimestampComment(seconds: 8, body: 'Great memories here.'),
       ],
+      availableResolutions: ['240p', '480p', '720p'],
     ),
     FeedItem(
       id: '4',
@@ -285,6 +290,7 @@ final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
       timestampComments: [
         VideoTimestampComment(seconds: 14, body: 'Hire button worked for me!'),
       ],
+      availableResolutions: ['240p', '480p', '720p'],
     ),
   ];
 });

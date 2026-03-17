@@ -9,6 +9,7 @@ import { adminService } from '../services/adminService.js';
 import { boundaryService } from '../services/boundaryService.js';
 import { gatheringService } from '../services/gatheringService.js';
 import { safetyService } from '../services/safetyService.js';
+import { sessionService } from '../services/sessionService.js';
 
 export const typeDefs = `
   enum PathwayStatus {
@@ -127,6 +128,13 @@ export const typeDefs = `
     phone: String!
     expiresAt: String!
     devOtpPreview: String
+  }
+
+  type SessionTokenPayload {
+    userId: ID!
+    role: String!
+    sessionToken: String!
+    expiresAt: String!
   }
 
   type MissionPeerMatch {
@@ -294,6 +302,7 @@ export const typeDefs = `
   type Mutation {
     sendPhoneOtp(phone: String!): OtpDispatch!
     verifyPhoneOtp(phone: String!, otpCode: String!): User!
+    issueAdminSession(adminSecret: String!): SessionTokenPayload!
     setUserProfile(
       userId: ID!
       displayName: String
@@ -425,6 +434,36 @@ function ageFromBirthday(value?: Date | null) {
   return age;
 }
 
+type AppRole = 'guest' | 'user' | 'moderator' | 'admin';
+
+type RequestContext = {
+  userId: string;
+  role: AppRole;
+};
+
+function requireAuthenticated(context: RequestContext) {
+  if (context.userId == 'anonymous' || context.role == 'guest') {
+    throw new Error('Authentication required.');
+  }
+}
+
+function requireRole(context: RequestContext, allowedRoles: AppRole[]) {
+  requireAuthenticated(context);
+  if (!allowedRoles.includes(context.role)) {
+    throw new Error('Forbidden for this role.');
+  }
+}
+
+function requireSelfOrRole(context: RequestContext, targetUserId: string, allowedRoles: AppRole[]) {
+  requireAuthenticated(context);
+  if (context.userId == targetUserId) {
+    return;
+  }
+  if (!allowedRoles.includes(context.role)) {
+    throw new Error('Forbidden for this role.');
+  }
+}
+
 export const resolvers = {
   User: {
     age: (parent: { birthday?: Date | null }) => ageFromBirthday(parent.birthday),
@@ -463,8 +502,9 @@ export const resolvers = {
     pathwayPeerMatch: async (
       _: unknown,
       args: { academicFocus: string; state?: string; lga?: string },
-      context: { userId: string }
+      context: RequestContext
     ) => {
+      requireAuthenticated(context);
       const summary = await missionSearchService.pathwayPeerMatch({
         ...args,
         viewerUserId: context.userId == 'anonymous' ? undefined : context.userId,
@@ -480,8 +520,9 @@ export const resolvers = {
         talent?: string;
         gender?: 'MALE' | 'FEMALE';
       },
-      context: { userId: string }
+      context: RequestContext
     ) => {
+      requireAuthenticated(context);
       const blockedIds = await boundaryService.blockedUserIdsForViewer(context.userId);
       return prisma.user.findMany({
         where: {
@@ -507,10 +548,12 @@ export const resolvers = {
         take: 50,
       });
     },
-    feed: async (_: unknown, args: { limit?: number }, context: { userId: string }) => {
+    feed: async (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireAuthenticated(context);
       return feedService.feed(args.limit ?? 20, context.userId == 'anonymous' ? undefined : context.userId);
     },
-    blockedAccounts: async (_: unknown, args: { userId: string }) => {
+    blockedAccounts: async (_: unknown, args: { userId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
       const rows = await boundaryService.blockedAccounts(args.userId);
       return rows.map((row: any) => ({
         userId: row.blocked.id,
@@ -521,8 +564,10 @@ export const resolvers = {
     },
     nearbyGatheringPlaces: async (
       _: unknown,
-      args: { userId: string; latitude: number; longitude: number; radiusMiles?: number }
+      args: { userId: string; latitude: number; longitude: number; radiusMiles?: number },
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
       const rows = await gatheringService.suggestNearbyGatheringPlaces(args);
       return rows.map((place: any) => ({
         id: place.id,
@@ -541,7 +586,8 @@ export const resolvers = {
         })),
       }));
     },
-    userGatheringGroups: async (_: unknown, args: { userId: string }) => {
+    userGatheringGroups: async (_: unknown, args: { userId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
       const rows = await gatheringService.groupsForUser(args.userId);
       return rows.map((row: any) => ({
         id: row.group.id,
@@ -552,13 +598,16 @@ export const resolvers = {
         isPrivate: row.group.isPrivate,
       }));
     },
-    breakGlassBundles: (_: unknown, args: { limit?: number }) => {
+    breakGlassBundles: (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['moderator', 'admin']);
       return safetyService.listBundles(args.limit ?? 20);
     },
-    adminActionLogs: (_: unknown, args: { limit?: number }) => {
+    adminActionLogs: (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
       return adminService.recentLogs(args.limit ?? 50);
     },
-    readSensitiveField: (_: unknown, args: { ownerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: { userId: string }) => {
+    readSensitiveField: (_: unknown, args: { ownerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: RequestContext) => {
+      requireAuthenticated(context);
       return privacyVaultService.readSensitiveField(context.userId, args.ownerUserId, args.field);
     }
   },
@@ -568,6 +617,9 @@ export const resolvers = {
     verifyPhoneOtp: async (_: unknown, args: { phone: string; otpCode: string }) => {
       const { user } = await authService.verifyPhoneOtp(args.phone, args.otpCode);
       return user;
+    },
+    issueAdminSession: async (_: unknown, args: { adminSecret: string }) => {
+      return sessionService.issueAdminSession(args.adminSecret);
     },
     setUserProfile: async (
       _: unknown,
@@ -593,8 +645,10 @@ export const resolvers = {
         safeSearchVerifiedMembersOnly?: boolean;
         lga?: string;
         state?: string;
-      }
+      },
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       const updated = await prisma.user.update({
         where: { id: args.userId },
         data: {
@@ -637,14 +691,18 @@ export const resolvers = {
     },
     setFieldVisibility: async (
       _: unknown,
-      args: { userId: string; fieldKey: string; visibility: 'EVERYONE' | 'CONNECTIONS' | 'ONLY_ME' }
+      args: { userId: string; fieldKey: string; visibility: 'EVERYONE' | 'CONNECTIONS' | 'ONLY_ME' },
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       return privacyVaultService.setVisibility(args.userId, args.fieldKey, args.visibility);
     },
     setSafetyMode: async (
       _: unknown,
-      args: { userId: string; femaleOnly: boolean; verifiedMembersOnly: boolean }
+      args: { userId: string; femaleOnly: boolean; verifiedMembersOnly: boolean },
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       await prisma.user.update({
         where: { id: args.userId },
         data: {
@@ -654,23 +712,31 @@ export const resolvers = {
       });
       return true;
     },
-    updateSensitiveFields: async (_: unknown, args: { userId: string; genotype?: string; bloodGroup?: string }) => {
+    updateSensitiveFields: async (_: unknown, args: { userId: string; genotype?: string; bloodGroup?: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       await privacyVaultService.updateSensitiveFields(args.userId, args.genotype, args.bloodGroup);
       return true;
     },
-    grantSensitiveField: async (_: unknown, args: { ownerUserId: string; viewerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }) => {
+    grantSensitiveField: async (_: unknown, args: { ownerUserId: string; viewerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: RequestContext) => {
+      requireSelfOrRole(context, args.ownerUserId, ['admin']);
       await privacyVaultService.grantFieldAccess(args.ownerUserId, args.viewerUserId, args.field);
       return true;
     },
-    revokeSensitiveField: async (_: unknown, args: { ownerUserId: string; viewerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }) => {
+    revokeSensitiveField: async (_: unknown, args: { ownerUserId: string; viewerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: RequestContext) => {
+      requireSelfOrRole(context, args.ownerUserId, ['admin']);
       await privacyVaultService.revokeFieldAccess(args.ownerUserId, args.viewerUserId, args.field);
       return true;
     },
-    createMarketplaceCheckout: async (_: unknown, args: { userId: string }) => {
+    createMarketplaceCheckout: async (_: unknown, args: { userId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       const checkoutUrl = await paymentService.createMarketplaceCheckout(args.userId);
       return { checkoutUrl };
     },
-    grantMeritAccess: async (_: unknown, args: { userId: string; adminId: string; reason: string }) => {
+    grantMeritAccess: async (_: unknown, args: { userId: string; adminId: string; reason: string }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await paymentService.grantMeritOverride(args.userId, args.adminId, args.reason);
       return true;
     },
@@ -689,7 +755,10 @@ export const resolvers = {
         isHiddenPendingReview?: boolean;
         copyrightBlocked?: boolean;
       }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.authorUserId, ['admin']);
       const post = await feedService.createPost(args);
       return {
         ...post,
@@ -710,83 +779,134 @@ export const resolvers = {
         reshares: [],
       };
     },
-    reactToPost: async (_: unknown, args: { postId: string; userId: string; kind: 'WARM_HEART' | 'PRAYER_HANDS' }) => {
+    reactToPost: async (_: unknown, args: { postId: string; userId: string; kind: 'WARM_HEART' | 'PRAYER_HANDS' }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       await feedService.reactToPost(args);
       return true;
     },
-    resharePost: async (_: unknown, args: { postId: string; userId: string; targetGroupId?: string }) => {
+    resharePost: async (_: unknown, args: { postId: string; userId: string; targetGroupId?: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       await feedService.resharePost(args);
       return true;
     },
-    addComment: async (_: unknown, args: { postId: string; userId: string; body: string; timestampSeconds?: number }) => {
+    addComment: async (_: unknown, args: { postId: string; userId: string; body: string; timestampSeconds?: number }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
       await feedService.addComment(args);
       return true;
     },
     adminSuspendUser: async (
       _: unknown,
       args: { adminUserId: string; userId: string; hours: number; reason?: string }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.suspendUser(args);
       return true;
     },
     adminShadowBanUser: async (
       _: unknown,
       args: { adminUserId: string; userId: string; reason?: string }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.shadowBanUser(args);
       return true;
     },
     adminDeleteBanUser: async (
       _: unknown,
       args: { adminUserId: string; userId: string; phone?: string; deviceId?: string; reason?: string }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.deleteBanUser(args);
       return true;
     },
     adminApproveMarketplace: async (
       _: unknown,
       args: { adminUserId: string; userId: string; certificateTitle: string }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.approveMarketplace(args);
       return true;
     },
     adminGrantMeritMarketplace: async (
       _: unknown,
       args: { adminUserId: string; userId: string; certificateTitle: string; reason: string }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.grantMeritMarketplace(args);
       return true;
     },
     adminSetTalentFeatured: async (
       _: unknown,
       args: { adminUserId: string; userId: string; isFeatured: boolean }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.setTalentFeatured(args);
       return true;
     },
     adminReviewAd: async (
       _: unknown,
       args: { adminUserId: string; adId: string; targeting: string; approved: boolean; note?: string }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
       await adminService.reviewAd(args);
       return true;
     },
     blockUser: async (
       _: unknown,
       args: { blockerId: string; blockedId: string; reasonCode?: 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE_CONTENT' | 'OTHER' }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.blockerId, ['admin']);
       await boundaryService.blockUser(args);
       return true;
     },
-    unblockUser: async (_: unknown, args: { blockerId: string; blockedId: string }) => {
+    unblockUser: async (_: unknown, args: { blockerId: string; blockedId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.blockerId, ['admin']);
       await boundaryService.unblockUser(args);
       return true;
     },
-    muteUser: async (_: unknown, args: { muterId: string; mutedId: string }) => {
+    muteUser: async (_: unknown, args: { muterId: string; mutedId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.muterId, ['admin']);
       await boundaryService.muteUser(args);
       return true;
     },
-    unmuteUser: async (_: unknown, args: { muterId: string; mutedId: string }) => {
+    unmuteUser: async (_: unknown, args: { muterId: string; mutedId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.muterId, ['admin']);
       await boundaryService.unmuteUser(args);
       return true;
     },
@@ -798,7 +918,10 @@ export const resolvers = {
         reasonCode: 'SPAM' | 'HARASSMENT' | 'SCAM' | 'INAPPROPRIATE_CONTENT' | 'OTHER';
         detail?: string;
       }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.reporterId, ['admin']);
       await boundaryService.reportUser(args);
       return true;
     },
@@ -812,7 +935,10 @@ export const resolvers = {
         latitude: number;
         longitude: number;
       }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['admin']);
       await gatheringService.upsertLocalGatheringPlace(args);
       await gatheringService.ensureGlobalCommunity();
       return true;
@@ -827,7 +953,13 @@ export const resolvers = {
         isPrivate?: boolean;
         parentGroupId?: string;
       }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['moderator', 'admin']);
+      if (context.userId != args.adminUserId && context.role != 'admin') {
+        throw new Error('Moderator identity mismatch.');
+      }
       await gatheringService.createSubGroup(args);
       return true;
     },
@@ -838,24 +970,34 @@ export const resolvers = {
         groupId: string;
         role?: 'MEMBER' | 'FRIEND' | 'SEEKER' | 'MODERATOR' | 'LEADER';
       }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
       await gatheringService.joinGroup(args);
       return true;
     },
     checkInGatheringPlace: async (
       _: unknown,
       args: { userId: string; gatheringPlaceId: string }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
       return gatheringService.checkInToPlace(args);
     },
-    markChatRead: async (_: unknown, args: { messageId: string; userId: string }) => {
+    markChatRead: async (_: unknown, args: { messageId: string; userId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
       await chatService.markRead(args.messageId, args.userId);
       return true;
     },
     reportChatMessage: async (
       _: unknown,
       args: { messageId: string; reporterId: string; localAdminUserId?: string }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.reporterId, ['moderator', 'admin']);
       await chatService.reportMessage(args);
       return true;
     },
@@ -872,7 +1014,10 @@ export const resolvers = {
           | 'UNWHOLESOME_BEHAVIOR';
         summary: string;
       }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.flaggedUserId, ['moderator', 'admin']);
       await safetyService.createMetadataFlag(args);
       return true;
     },
@@ -890,7 +1035,10 @@ export const resolvers = {
         localAiSummary?: string;
         evidenceMessages: string[];
       }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.reportedUserId, ['moderator', 'admin']);
       await safetyService.createAiBreakGlassBundle({
         chatId: args.chatId,
         reportedUserId: args.reportedUserId,
@@ -918,7 +1066,10 @@ export const resolvers = {
         messageFrankingProof: string;
         evidenceMessages: string[];
       }
+    ,
+      context: RequestContext
     ) => {
+      requireSelfOrRole(context, args.reporterUserId, ['moderator', 'admin']);
       await safetyService.createUserReportBundle({
         chatId: args.chatId,
         reporterUserId: args.reporterUserId,
@@ -939,11 +1090,18 @@ export const resolvers = {
         adminUserId: string;
         action: 'DISMISSED' | 'WARNING_SENT' | 'SUSPENDED_7_DAYS' | 'PERMANENT_BAN';
       }
+    ,
+      context: RequestContext
     ) => {
+      requireRole(context, ['moderator', 'admin']);
+      if (context.userId != args.adminUserId && context.role != 'admin') {
+        throw new Error('Moderator/Admin identity mismatch.');
+      }
       await safetyService.resolveBundle(args);
       return true;
     },
-    sendChatMessage: async (_: unknown, args: { senderUserId: string; roomId: string; body: string }) => {
+    sendChatMessage: async (_: unknown, args: { senderUserId: string; roomId: string; body: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.senderUserId, ['moderator', 'admin']);
       const result = await chatService.sendMessage(args.senderUserId, args.roomId, args.body);
       return {
         messageId: result.message.id,

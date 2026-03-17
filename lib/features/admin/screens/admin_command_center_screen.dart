@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../auth/providers/session_provider.dart';
 import '../providers/admin_command_center_provider.dart';
 
 class AdminCommandCenterScreen extends ConsumerWidget {
@@ -43,6 +44,7 @@ class AdminCommandCenterScreen extends ConsumerWidget {
     final centerHealth = ref.watch(centerHealthProvider);
     final adminRoles = ref.watch(localAdminRolesProvider);
     final logs = ref.watch(immutableTransparencyLogProvider);
+    final moderatorCodes = ref.watch(moderatorInviteCodeProvider);
 
     final scheme = Theme.of(context).colorScheme;
 
@@ -664,6 +666,51 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                           child: Text(
                             '${entry['leader']} → ${entry['role']}',
                             style: TextStyle(color: scheme.onSurface),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Moderator Access Code Manager'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Admin generates single-use moderator codes per Gathering Place and role.'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.tonal(
+                            onPressed: () {
+                              ref.read(moderatorInviteCodeProvider.notifier).generateCode(
+                                    gatheringPlace: 'Lagos Island Gathering Place',
+                                    role: 'Service Moderator',
+                                  );
+                            },
+                            child: const Text('Generate Lagos Service Mod Code'),
+                          ),
+                          FilledButton.tonal(
+                            onPressed: () {
+                              ref.read(moderatorInviteCodeProvider.notifier).generateCode(
+                                    gatheringPlace: 'Provo South Gathering Place',
+                                    role: 'Temple Prep Moderator',
+                                  );
+                            },
+                            child: const Text('Generate Provo Temple Prep Code'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ...moderatorCodes.take(8).map(
+                        (code) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            '${code.code} · ${code.gatheringPlace} · ${code.role} · ${code.isActive ? 'Active' : 'Used'}',
+                            style: TextStyle(color: scheme.onSurface, fontSize: 12),
                           ),
                         ),
                       ),

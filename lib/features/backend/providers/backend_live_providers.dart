@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/providers/session_provider.dart';
 import '../api/backend_gateway.dart';
 import '../api/backend_realtime_service.dart';
 
@@ -16,9 +17,19 @@ final backendBaseUrlProvider = Provider<String>((ref) {
 final backendUserIdProvider = StateProvider<String>((ref) => 'demo-user-1');
 
 final backendGatewayProvider = Provider<BackendGateway>((ref) {
+  final session = ref.watch(sessionControllerProvider);
+  final role = switch (session.role) {
+    AppRole.admin => 'admin',
+    AppRole.moderator => 'moderator',
+    AppRole.user => 'user',
+    AppRole.guest => 'guest',
+  };
+
   return BackendGateway(
     baseUrl: ref.watch(backendBaseUrlProvider),
     userId: ref.watch(backendUserIdProvider),
+    role: role,
+    authToken: session.sessionToken,
   );
 });
 

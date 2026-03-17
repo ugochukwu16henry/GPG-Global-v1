@@ -11,6 +11,7 @@ import { createSocketServer } from './realtime/socketServer.js';
 import { prisma } from './lib/prisma.js';
 import { neo4jDriver } from './lib/neo4j.js';
 import { gatheringService } from './services/gatheringService.js';
+import { sessionService } from './services/sessionService.js';
 
 const app = express();
 
@@ -37,9 +38,17 @@ app.use(
   '/graphql',
   express.json(),
   expressMiddleware(apollo, {
-    context: async ({ req }) => {
+    context: async ({ req }: { req: any }) => {
+      const token = (req.headers['x-auth-token'] as string | undefined) ?? null;
+      const verified = sessionService.verifySessionToken(token);
+      const headerUserId = (req.headers['x-user-id'] as string | undefined) ?? 'anonymous';
+
+      const userId = verified?.userId ?? headerUserId;
+      const role = verified?.role ?? (headerUserId == 'anonymous' ? 'guest' : 'user');
+
       return {
-        userId: (req.headers['x-user-id'] as string | undefined) ?? 'anonymous'
+        userId,
+        role,
       };
     }
   })

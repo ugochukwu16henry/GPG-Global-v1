@@ -24,6 +24,7 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
   bool _isMuted = true;
   bool _isPlaying = false;
   bool _showCaptions = true;
+  String _selectedQuality = 'Auto';
   ScrollPosition? _scrollPosition;
 
   @override
@@ -73,6 +74,17 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
       VideoAspect.square => 1,
       VideoAspect.landscape => 16 / 9,
     };
+  }
+
+  List<String> _qualityOptions() {
+    final options = <String>{'Auto', ...widget.item.availableResolutions};
+    final sorted = options.toList(growable: false);
+    sorted.sort((a, b) {
+      if (a == 'Auto') return -1;
+      if (b == 'Auto') return 1;
+      return a.compareTo(b);
+    });
+    return sorted;
   }
 
   @override
@@ -131,6 +143,29 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                       right: 8,
                       child: Row(
                         children: [
+                          PopupMenuButton<String>(
+                            tooltip: 'Video Quality',
+                            onSelected: (value) => setState(() => _selectedQuality = value),
+                            itemBuilder: (context) => _qualityOptions()
+                                .map(
+                                  (quality) => PopupMenuItem<String>(
+                                    value: quality,
+                                    child: Text(quality),
+                                  ),
+                                )
+                                .toList(growable: false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                _selectedQuality,
+                                style: const TextStyle(color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          ),
                           IconButton(
                             visualDensity: VisualDensity.compact,
                             icon: Icon(
@@ -269,6 +304,16 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                             .toList(),
                       ),
                     ],
+                    const SizedBox(height: 6),
+                    Text(
+                      _selectedQuality == 'Auto'
+                          ? 'Quality: Auto Adaptive (${item.availableResolutions.join('/')})'
+                          : 'Quality: $_selectedQuality',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 10,
+                      ),
+                    ),
                     if (item.timestampComments.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       ...item.timestampComments.take(2).map(

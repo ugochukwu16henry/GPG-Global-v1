@@ -6,11 +6,15 @@ class BackendGateway {
   BackendGateway({
     required this.baseUrl,
     required this.userId,
+    this.role = 'user',
+    this.authToken,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
   final String baseUrl;
   final String userId;
+  final String role;
+  final String? authToken;
   final http.Client _client;
 
   Uri get _graphqlUri => Uri.parse('$baseUrl/graphql');
@@ -24,6 +28,8 @@ class BackendGateway {
       headers: {
         'content-type': 'application/json',
         'x-user-id': userId,
+        'x-role': role,
+        if (authToken != null && authToken!.isNotEmpty) 'x-auth-token': authToken!,
       },
       body: jsonEncode({
         'query': query,
@@ -322,6 +328,30 @@ class BackendGateway {
 
     final result = data['verifyPhoneOtp'] as Map<String, dynamic>;
     return result['id'] as String;
+  }
+
+  Future<Map<String, String>> issueAdminSession(String adminSecret) async {
+    final data = await _query(
+      '''
+      mutation IssueAdminSession(${r'$'}adminSecret: String!) {
+        issueAdminSession(adminSecret: ${r'$'}adminSecret) {
+          userId
+          role
+          sessionToken
+          expiresAt
+        }
+      }
+      ''',
+      variables: {'adminSecret': adminSecret},
+    );
+
+    final result = data['issueAdminSession'] as Map<String, dynamic>;
+    return {
+      'userId': result['userId'].toString(),
+      'role': result['role'].toString(),
+      'sessionToken': result['sessionToken'].toString(),
+      'expiresAt': result['expiresAt'].toString(),
+    };
   }
 
   Future<void> adminSuspendUser({
