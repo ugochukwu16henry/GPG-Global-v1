@@ -6,6 +6,7 @@ import '../widgets/g_nexus_logo.dart';
 import '../widgets/gathering_feed.dart';
 import '../widgets/pathway_progress_tracker.dart';
 import '../widgets/profile_card.dart';
+import '../widgets/live_events_and_marketplace_demo.dart';
 
 /// Home Dashboard with Bento Grid: Profile (top-left), Pathway Progress (top-right),
 /// scrollable Gathering Feed (center). Custom nav bar and G-Nexus header.
@@ -104,6 +105,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          const LiveEventsAndMarketplaceDemo(),
+          const SizedBox(height: 16),
           ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: constraints.maxHeight - 220,
@@ -129,6 +132,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
               SizedBox(width: 200, child: PathwayProgressTracker()),
             ],
           ),
+          const SizedBox(height: 24),
+          const LiveEventsAndMarketplaceDemo(),
           const SizedBox(height: 24),
           Expanded(child: GatheringFeed()),
         ],

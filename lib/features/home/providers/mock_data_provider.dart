@@ -99,3 +99,99 @@ final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
     ),
   ];
 });
+
+/// --- Live demo integrations -------------------------------------------------
+
+/// Simple live event (birthday, chat, or other notification).
+class LiveEvent {
+  const LiveEvent({
+    required this.id,
+    required this.type,
+    required this.message,
+    required this.timestampLabel,
+  });
+
+  final String id;
+  final String type; // e.g. "Birthday", "Chat"
+  final String message;
+  final String timestampLabel;
+}
+
+/// Mock stream of latest live events for the home screen ticker.
+final liveEventsProvider = StateProvider<List<LiveEvent>>((ref) {
+  return const [
+    LiveEvent(
+      id: 'e1',
+      type: 'Birthday',
+      message: 'It’s Mercy’s birthday in Lagos Study Group 🎉',
+      timestampLabel: 'Just now',
+    ),
+    LiveEvent(
+      id: 'e2',
+      type: 'Chat',
+      message: 'New message in Nigeria Lagos Mission Reunion',
+      timestampLabel: '2 min ago',
+    ),
+    LiveEvent(
+      id: 'e3',
+      type: 'Milestone',
+      message: 'Samuel moved from Connect → Degree in Software Dev',
+      timestampLabel: '10 min ago',
+    ),
+  ];
+});
+
+/// Marketplace listing used for the filter demo.
+class MarketplaceListing {
+  const MarketplaceListing({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.location,
+  });
+
+  final String id;
+  final String title;
+  final String category; // e.g. "Tech", "Tutoring"
+  final String location;
+}
+
+final _allMarketplaceListings = [
+  const MarketplaceListing(
+    id: 'm1',
+    title: 'Junior Flutter Developer (Remote)',
+    category: 'Tech',
+    location: 'Lagos',
+  ),
+  const MarketplaceListing(
+    id: 'm2',
+    title: 'Pathway Math Tutor',
+    category: 'Tutoring',
+    location: 'Salt Lake City',
+  ),
+  const MarketplaceListing(
+    id: 'm3',
+    title: 'Graphic Designer · Portfolio help',
+    category: 'Creative',
+    location: 'Accra',
+  ),
+  const MarketplaceListing(
+    id: 'm4',
+    title: 'Return Missionary Web Developer',
+    category: 'Tech',
+    location: 'Nairobi',
+  ),
+];
+
+/// Selected marketplace category for the demo filter pill row.
+final selectedMarketplaceCategoryProvider = StateProvider<String?>((ref) => null);
+
+/// Filtered marketplace listings based on selected category.
+final filteredMarketplaceListingsProvider = Provider<List<MarketplaceListing>>((ref) {
+  final selected = ref.watch(selectedMarketplaceCategoryProvider);
+  if (selected == null) {
+    return _allMarketplaceListings;
+  }
+  return _allMarketplaceListings.where((e) => e.category == selected).toList();
+});
+
