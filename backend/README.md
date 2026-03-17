@@ -9,13 +9,20 @@ This backend is the production-ready foundation for moving from mock frontend da
   - Missions
   - Pathway status
   - LGA/state
+  - Country, birthday -> computed age, relationship status
+  - Gender and safe-search controls
+  - BYU-Pathway toggles (Connect / Degree / Alumni)
+  - Academic focus and regional peer matching
   - Marketplace/payment status
 - Privacy vault:
   - AES-256-GCM encryption for Genotype/Blood Group
+  - field-level visibility center (`EVERYONE`, `CONNECTIONS`, `ONLY_ME`)
   - grant/revoke authorization toggles per sensitive field
 - Mission peer search engine:
   - mission suggestions by text query
   - mission match count query
+  - Mission alumni mapping and suggested mission peers
+  - pathway peer match summary by degree focus + location
   - Neo4j graph query hook for service-year relationship search
 - Marketplace payment monetization:
   - Stripe checkout + webhook updates to `LIVE_PROFESSIONAL`
@@ -24,6 +31,11 @@ This backend is the production-ready foundation for moving from mock frontend da
 - AI Safety guardrails:
   - Llama 4 moderation endpoint integration
   - automatic moderation flags + control-room red-flag event pipeline
+- Social engagement API:
+  - post composer (text, media, skill highlight)
+  - warm/prayer reactions
+  - reshare to wall/group
+  - AI-moderated comments
 - API & real-time:
   - GraphQL (Apollo)
   - Socket.io room chat and admin red-flag push events

@@ -94,5 +94,67 @@ export const privacyVaultService = {
       return decrypt(user.bloodGroupCiphertext);
     }
     return null;
+  },
+
+  async setVisibility(userId: string, fieldKey: string, visibility: 'EVERYONE' | 'CONNECTIONS' | 'ONLY_ME') {
+    await prisma.fieldVisibility.upsert({
+      where: {
+        userId_fieldKey: {
+          userId,
+          fieldKey
+        }
+      },
+      create: {
+        userId,
+        fieldKey,
+        visibility
+      },
+      update: {
+        visibility
+      }
+    });
+
+    return true;
+  },
+
+  async canViewField({
+    ownerUserId,
+    requestingUserId,
+    fieldKey,
+  }: {
+    ownerUserId: string;
+    requestingUserId: string;
+    fieldKey: string;
+  }) {
+    if (ownerUserId === requestingUserId) {
+      return true;
+    }
+
+    const setting = await prisma.fieldVisibility.findUnique({
+      where: {
+        userId_fieldKey: {
+          userId: ownerUserId,
+          fieldKey
+        }
+      }
+    });
+
+    const visibility = setting?.visibility ?? 'ONLY_ME';
+    if (visibility === 'ONLY_ME') {
+      return false;
+    }
+    if (visibility === 'EVERYONE') {
+      return true;
+    }
+
+    return prisma.privacyGrant
+      .findFirst({
+        where: {
+          ownerUserId,
+          viewerUserId: requestingUserId,
+          revokedAt: null
+        }
+      })
+      .then((grant) => grant != null);
   }
 };

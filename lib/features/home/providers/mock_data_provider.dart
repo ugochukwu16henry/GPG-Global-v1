@@ -3,31 +3,129 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// User pathway status: Connect (PathwayConnect) or Degree (degree program).
 enum PathwayStatus { connect, degree }
 
+enum RelationshipStatus { single, married }
+
+enum Gender { male, female }
+
+enum VisibilityLevel { everyone, connections, onlyMe }
+
 /// Mission/Pathway status for profile card.
 class ProfileState {
   const ProfileState({
     this.displayName = 'Alex',
+    this.profilePictureUrl,
+    this.bio = 'My testimony: Jesus Christ guides my goals and growth.',
+    this.country = 'Nigeria',
+    this.state = 'Lagos',
+    this.lga = 'Ikeja',
+    this.birthday,
+    this.relationshipStatus = RelationshipStatus.single,
+    this.gender = Gender.male,
+    this.isPathwayConnect = true,
+    this.isDegree = false,
+    this.isAlumni = false,
+    this.academicFocus = 'Software Development',
+    this.safeSearchFemaleOnly = false,
+    this.safeSearchVerifiedMembersOnly = true,
+    this.allowsBirthdayBroadcast = true,
     this.missionName = 'Nigeria Lagos Mission',
+    this.servedMission = true,
+    this.memberStatusLabel = 'Member',
     this.pathwayStatus = PathwayStatus.connect,
     this.pathwayStep = 'PathwayConnect · Semester 2',
+    this.visibilityByField = const {
+      'age': VisibilityLevel.connections,
+      'phone': VisibilityLevel.onlyMe,
+      'bloodGroup': VisibilityLevel.onlyMe,
+      'genotype': VisibilityLevel.onlyMe,
+    },
   });
 
   final String displayName;
+  final String? profilePictureUrl;
+  final String bio;
+  final String country;
+  final String state;
+  final String lga;
+  final DateTime? birthday;
+  final RelationshipStatus relationshipStatus;
+  final Gender gender;
+  final bool isPathwayConnect;
+  final bool isDegree;
+  final bool isAlumni;
+  final String academicFocus;
+  final bool safeSearchFemaleOnly;
+  final bool safeSearchVerifiedMembersOnly;
+  final bool allowsBirthdayBroadcast;
   final String missionName;
+  final bool servedMission;
+  final String memberStatusLabel;
   final PathwayStatus pathwayStatus;
   final String pathwayStep;
+  final Map<String, VisibilityLevel> visibilityByField;
+
+  int? get age {
+    if (birthday == null) {
+      return null;
+    }
+    final now = DateTime.now();
+    var years = now.year - birthday!.year;
+    final hadBirthday =
+        now.month > birthday!.month || (now.month == birthday!.month && now.day >= birthday!.day);
+    if (!hadBirthday) {
+      years -= 1;
+    }
+    return years;
+  }
 
   ProfileState copyWith({
     String? displayName,
+    String? profilePictureUrl,
+    String? bio,
+    String? country,
+    String? state,
+    String? lga,
+    DateTime? birthday,
+    RelationshipStatus? relationshipStatus,
+    Gender? gender,
+    bool? isPathwayConnect,
+    bool? isDegree,
+    bool? isAlumni,
+    String? academicFocus,
+    bool? safeSearchFemaleOnly,
+    bool? safeSearchVerifiedMembersOnly,
+    bool? allowsBirthdayBroadcast,
     String? missionName,
+    bool? servedMission,
+    String? memberStatusLabel,
     PathwayStatus? pathwayStatus,
     String? pathwayStep,
+    Map<String, VisibilityLevel>? visibilityByField,
   }) {
     return ProfileState(
       displayName: displayName ?? this.displayName,
+      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      bio: bio ?? this.bio,
+      country: country ?? this.country,
+      state: state ?? this.state,
+      lga: lga ?? this.lga,
+      birthday: birthday ?? this.birthday,
+      relationshipStatus: relationshipStatus ?? this.relationshipStatus,
+      gender: gender ?? this.gender,
+      isPathwayConnect: isPathwayConnect ?? this.isPathwayConnect,
+      isDegree: isDegree ?? this.isDegree,
+      isAlumni: isAlumni ?? this.isAlumni,
+      academicFocus: academicFocus ?? this.academicFocus,
+      safeSearchFemaleOnly: safeSearchFemaleOnly ?? this.safeSearchFemaleOnly,
+      safeSearchVerifiedMembersOnly:
+          safeSearchVerifiedMembersOnly ?? this.safeSearchVerifiedMembersOnly,
+      allowsBirthdayBroadcast: allowsBirthdayBroadcast ?? this.allowsBirthdayBroadcast,
       missionName: missionName ?? this.missionName,
+      servedMission: servedMission ?? this.servedMission,
+      memberStatusLabel: memberStatusLabel ?? this.memberStatusLabel,
       pathwayStatus: pathwayStatus ?? this.pathwayStatus,
       pathwayStep: pathwayStep ?? this.pathwayStep,
+      visibilityByField: visibilityByField ?? this.visibilityByField,
     );
   }
 }
@@ -47,6 +145,37 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       pathwayStep: state.pathwayStatus == PathwayStatus.connect
           ? 'Degree Program · Software Development'
           : 'PathwayConnect · Semester 2',
+    );
+  }
+
+  void setVisibility(String fieldKey, VisibilityLevel level) {
+    state = state.copyWith(
+      visibilityByField: {
+        ...state.visibilityByField,
+        fieldKey: level,
+      },
+    );
+  }
+
+  void setSafetyMode({bool? femaleOnly, bool? verifiedMembersOnly}) {
+    state = state.copyWith(
+      safeSearchFemaleOnly: femaleOnly ?? state.safeSearchFemaleOnly,
+      safeSearchVerifiedMembersOnly:
+          verifiedMembersOnly ?? state.safeSearchVerifiedMembersOnly,
+    );
+  }
+
+  void setPathwayJourney({
+    bool? isPathwayConnect,
+    bool? isDegree,
+    bool? isAlumni,
+    String? academicFocus,
+  }) {
+    state = state.copyWith(
+      isPathwayConnect: isPathwayConnect ?? state.isPathwayConnect,
+      isDegree: isDegree ?? state.isDegree,
+      isAlumni: isAlumni ?? state.isAlumni,
+      academicFocus: academicFocus ?? state.academicFocus,
     );
   }
 }

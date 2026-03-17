@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/branding/sonic_identity_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../backend/providers/backend_live_providers.dart';
 import '../providers/mock_data_provider.dart';
 import 'g_nexus_logo.dart';
 import 'glass_card.dart';
@@ -12,11 +14,28 @@ import 'glass_card.dart';
 class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
   const LiveEventsAndMarketplaceDemo({super.key});
 
+  Future<void> _launchCheckout(BuildContext context, String? checkoutUrl) async {
+    if (checkoutUrl == null || checkoutUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Checkout URL not available yet.')),
+      );
+      return;
+    }
+    final uri = Uri.tryParse(checkoutUrl);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open checkout URL.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
     final selectedCategory = ref.watch(selectedMarketplaceCategoryProvider);
+    final backendState = ref.watch(backendDemoControllerProvider);
+    final realtimeRedFlag = ref.watch(backendRedFlagStreamProvider);
     const sonicIdentity = SonicIdentityService();
 
     return Column(
@@ -144,6 +163,85 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                   fontSize: 10,
                   color: AppColors.textMuted,
                 ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.tonal(
+                    onPressed: backendState.isLoading
+                        ? null
+                        : () => ref
+                            .read(backendDemoControllerProvider.notifier)
+                            .runMissionSearch('Lagos'),
+                    child: const Text('Mission Search (Lagos)'),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: backendState.isLoading
+                        ? null
+                        : () => ref
+                            .read(backendDemoControllerProvider.notifier)
+                            .createCheckout(),
+                    child: const Text('Create $2 Checkout'),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: () => _launchCheckout(context, backendState.checkoutUrl),
+                    child: const Text('Open Checkout'),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: backendState.isLoading
+                        ? null
+                        : () => ref
+                            .read(backendDemoControllerProvider.notifier)
+                            .sendModerationProbe(),
+                    child: const Text('Send Moderation Probe'),
+                  ),
+                ],
+              ),
+              if (backendState.missionSuggestions.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Mission suggestions: ${backendState.missionSuggestions.join(', ')}',
+                  style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                ),
+              ],
+              if (backendState.peerMatchSummary != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  backendState.peerMatchSummary!,
+                  style: TextStyle(fontSize: 10, color: AppColors.stewardshipGreen),
+                ),
+              ],
+              if (backendState.moderationResult != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Guardrail result: ${backendState.moderationResult}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: backendState.moderationResult!.contains('No violation')
+                        ? AppColors.stewardshipGreen
+                        : AppColors.warmCrimson,
+                  ),
+                ),
+              ],
+              if (backendState.error != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Backend error: ${backendState.error}',
+                  style: TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+                ),
+              ],
+              realtimeRedFlag.when(
+                data: (value) => Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Control Room alert: $value',
+                    style: TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+                  ),
+                ),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
               ),
             ],
           ),

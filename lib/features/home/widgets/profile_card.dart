@@ -91,6 +91,28 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 ],
               ),
               const SizedBox(height: 12),
+              Text(
+                profile.bio,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _pill('Location', '${profile.country}, ${profile.state}, ${profile.lga}'),
+                  _pill('Relationship', profile.relationshipStatus.name),
+                  _pill('Gender', profile.gender.name),
+                  _pill('Age', profile.age?.toString() ?? 'N/A'),
+                  _pill('Member', profile.memberStatusLabel),
+                ],
+              ),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
@@ -116,6 +138,87 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _toggleChip(
+                      label: 'Pathway Connect',
+                      value: profile.isPathwayConnect,
+                      onChanged: (value) {
+                        ref.read(profileProvider.notifier).setPathwayJourney(
+                              isPathwayConnect: value,
+                            );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _toggleChip(
+                      label: 'Degree',
+                      value: profile.isDegree,
+                      onChanged: (value) {
+                        ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _toggleChip(
+                      label: 'Alumni',
+                      value: profile.isAlumni,
+                      onChanged: (value) {
+                        ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Educational Journey · ${profile.academicFocus}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _privacyChip('Blood Group', profile.visibilityByField['bloodGroup'] ?? VisibilityLevel.onlyMe),
+                  _privacyChip('Genotype', profile.visibilityByField['genotype'] ?? VisibilityLevel.onlyMe),
+                  _privacyChip('Age', profile.visibilityByField['age'] ?? VisibilityLevel.onlyMe),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _toggleChip(
+                      label: 'Female Safety Mode',
+                      value: profile.safeSearchFemaleOnly,
+                      onChanged: (value) {
+                        ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _toggleChip(
+                      label: 'Verified Members Only',
+                      value: profile.safeSearchVerifiedMembersOnly,
+                      onChanged: (value) {
+                        ref
+                            .read(profileProvider.notifier)
+                            .setSafetyMode(verifiedMembersOnly: value);
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Material(
@@ -181,6 +284,80 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _pill(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primaryNavy.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$title: $value',
+        style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+      ),
+    );
+  }
+
+  Widget _toggleChip({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: value
+              ? AppColors.stewardshipGreen.withValues(alpha: 0.18)
+              : AppColors.primaryNavy.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: value ? AppColors.stewardshipGreen : AppColors.textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _privacyChip(String field, VisibilityLevel level) {
+    final color = switch (level) {
+      VisibilityLevel.everyone => AppColors.stewardshipGreen,
+      VisibilityLevel.connections => AppColors.pathwayAmber,
+      VisibilityLevel.onlyMe => AppColors.warmCrimson,
+    };
+    final label = switch (level) {
+      VisibilityLevel.everyone => 'Everyone',
+      VisibilityLevel.connections => 'Connections',
+      VisibilityLevel.onlyMe => 'Only Me',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.visibility_rounded, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            '$field · $label',
+            style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }

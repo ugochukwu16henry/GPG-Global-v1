@@ -13,6 +13,22 @@ enum PathwayStatus {
   ALUMNI
 }
 
+enum RelationshipStatus {
+  SINGLE
+  MARRIED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum VisibilityLevel {
+  EVERYONE
+  CONNECTIONS
+  ONLY_ME
+}
+
 enum ProfessionalStatus {
   DRAFT
   LIVE_PROFESSIONAL
@@ -34,23 +50,43 @@ model User {
   id                 String               @id @default(cuid())
   phone              String               @unique
   displayName        String
+  profilePictureUrl  String?
+  bio                String?
+  country            String?
   isMember           Boolean              @default(false)
   missionId          String?
   mission            Mission?             @relation(fields: [missionId], references: [id])
+  servedMission      Boolean              @default(false)
+  birthday           DateTime?
+  relationshipStatus RelationshipStatus?
+  gender             Gender?
   pathwayStatus      PathwayStatus        @default(CONNECT)
+  isPathwayConnect   Boolean              @default(true)
+  isDegree           Boolean              @default(false)
+  isAlumni           Boolean              @default(false)
+  academicFocus      String?
   lga                String?
   state              String?
   genotypeCiphertext String?
   bloodGroupCiphertext String?
+  allowsBirthdayBroadcast Boolean         @default(false)
+  safeSearchFemaleOnly Boolean            @default(false)
+  safeSearchVerifiedMembersOnly Boolean   @default(false)
   professionalStatus ProfessionalStatus   @default(DRAFT)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
   privacyGrantsOwned PrivacyGrant[]       @relation("OwnerGrants")
   privacyGrantsReceived PrivacyGrant[]    @relation("ViewerGrants")
+  privacySettings    FieldVisibility[]
   paymentEvents      PaymentEvent[]
   chatMessages       ChatMessage[]
   authOtps           AuthOtp[]
+  missionAlumni      MissionAlumni[]
+  authoredPosts      Post[]
+  postComments       PostComment[]
+  postReactions      PostReaction[]
+  postReshares       PostReshare[]
 }
 
 model Mission {
@@ -92,6 +128,32 @@ model PrivacyGrant {
   @@index([ownerUserId, viewerUserId, field])
 }
 
+model FieldVisibility {
+  id             String @id @default(cuid())
+  userId         String
+  fieldKey       String
+  visibility     VisibilityLevel @default(ONLY_ME)
+  updatedAt      DateTime @updatedAt
+
+  user           User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, fieldKey])
+}
+
+model MissionAlumni {
+  id             String @id @default(cuid())
+  userId         String
+  missionId      String
+  serviceYearFrom Int
+  serviceYearTo   Int
+  createdAt      DateTime @default(now())
+
+  user           User @relation(fields: [userId], references: [id])
+  mission        Mission @relation(fields: [missionId], references: [id])
+
+  @@index([missionId, serviceYearFrom, serviceYearTo])
+}
+
 model PaymentEvent {
   id             String @id @default(cuid())
   userId         String
@@ -125,6 +187,61 @@ model ChatMessage {
   moderationFlag ModerationFlag?
 
   @@index([roomId, createdAt])
+}
+
+model Post {
+  id             String @id @default(cuid())
+  authorUserId   String
+  textBody       String?
+  mediaUrl       String?
+  skillHighlight String?
+  createdAt      DateTime @default(now())
+
+  author         User @relation(fields: [authorUserId], references: [id])
+  comments       PostComment[]
+  reactions      PostReaction[]
+  reshares       PostReshare[]
+
+  @@index([createdAt])
+}
+
+model PostReaction {
+  id             String @id @default(cuid())
+  postId         String
+  userId         String
+  kind           String
+  createdAt      DateTime @default(now())
+
+  post           Post @relation(fields: [postId], references: [id])
+  user           User @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model PostComment {
+  id             String @id @default(cuid())
+  postId         String
+  userId         String
+  body           String
+  createdAt      DateTime @default(now())
+
+  post           Post @relation(fields: [postId], references: [id])
+  user           User @relation(fields: [userId], references: [id])
+
+  @@index([postId, createdAt])
+}
+
+model PostReshare {
+  id             String @id @default(cuid())
+  postId         String
+  userId         String
+  targetGroupId  String?
+  createdAt      DateTime @default(now())
+
+  post           Post @relation(fields: [postId], references: [id])
+  user           User @relation(fields: [userId], references: [id])
+
+  @@index([postId, createdAt])
 }
 
 model ModerationFlag {

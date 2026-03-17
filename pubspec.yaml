@@ -1,10 +1,10 @@
 name: gpg_global
 description: GPG Gathering Place Global - Digital Sanctuary for YSA & BYU-Pathway community.
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -13,6 +13,9 @@ dependencies:
   riverpod_annotation: ^2.3.3
   google_fonts: ^6.1.0
   confetti: ^0.7.0
+  http: ^1.2.2
+  socket_io_client: ^3.0.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

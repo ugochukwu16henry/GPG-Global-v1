@@ -35,6 +35,66 @@ export const missionSearchService = {
     };
   },
 
+  async suggestedMissionPeersForUser(userId: string) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { missionId: true }
+    });
+
+    if (!currentUser?.missionId) {
+      return [];
+    }
+
+    return prisma.user.findMany({
+      where: {
+        missionId: currentUser.missionId,
+        id: { not: userId }
+      },
+      select: {
+        id: true,
+        displayName: true,
+        lga: true,
+        state: true
+      },
+      take: 30,
+      orderBy: { createdAt: 'desc' }
+    });
+  },
+
+  async pathwayPeerMatch({
+    academicFocus,
+    state,
+    lga,
+  }: {
+    academicFocus: string;
+    state?: string;
+    lga?: string;
+  }) {
+    const count = await prisma.user.count({
+      where: {
+        isDegree: true,
+        academicFocus: {
+          equals: academicFocus,
+          mode: 'insensitive'
+        },
+        state: state
+            ? {
+                equals: state,
+                mode: 'insensitive'
+              }
+            : undefined,
+        lga: lga
+            ? {
+                equals: lga,
+                mode: 'insensitive'
+              }
+            : undefined
+      }
+    });
+
+    return `Connect with ${count} others in your region also studying ${academicFocus}.`;
+  },
+
   async missionPeerGraphQuery(missionCode: string, fromYear?: number, toYear?: number) {
     const session = neo4jDriver.session();
     try {

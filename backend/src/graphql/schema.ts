@@ -4,6 +4,7 @@ import { missionSearchService } from '../services/missionSearchService.js';
 import { privacyVaultService } from '../services/privacyVaultService.js';
 import { paymentService } from '../services/paymentService.js';
 import { chatService } from '../services/chatService.js';
+import { feedService } from '../services/feedService.js';
 
 export const typeDefs = `
   enum PathwayStatus {
@@ -17,14 +18,45 @@ export const typeDefs = `
     BLOOD_GROUP
   }
 
+  enum RelationshipStatus {
+    SINGLE
+    MARRIED
+  }
+
+  enum Gender {
+    MALE
+    FEMALE
+  }
+
+  enum VisibilityLevel {
+    EVERYONE
+    CONNECTIONS
+    ONLY_ME
+  }
+
   type User {
     id: ID!
     phone: String!
     displayName: String!
+    profilePictureUrl: String
+    bio: String
+    country: String
     isMember: Boolean!
+    servedMission: Boolean!
+    birthday: String
+    age: Int
+    relationshipStatus: RelationshipStatus
+    gender: Gender
     pathwayStatus: PathwayStatus!
+    isPathwayConnect: Boolean!
+    isDegree: Boolean!
+    isAlumni: Boolean!
+    academicFocus: String
     lga: String
     state: String
+    allowsBirthdayBroadcast: Boolean!
+    safeSearchFemaleOnly: Boolean!
+    safeSearchVerifiedMembersOnly: Boolean!
     professionalStatus: String!
     mission: Mission
   }
@@ -49,6 +81,52 @@ export const typeDefs = `
     summary: String!
   }
 
+  type MissionPeerSuggestion {
+    id: ID!
+    displayName: String!
+    lga: String
+    state: String
+  }
+
+  type CommunitySearchUser {
+    id: ID!
+    displayName: String!
+    relationshipStatus: RelationshipStatus
+    gender: Gender
+    academicFocus: String
+    lga: String
+    state: String
+    mission: Mission
+  }
+
+  type PathwayPeerResult {
+    summary: String!
+  }
+
+  type FeedAuthor {
+    id: ID!
+    displayName: String!
+    profilePictureUrl: String
+  }
+
+  type FeedComment {
+    id: ID!
+    body: String!
+    author: FeedAuthor!
+  }
+
+  type FeedPost {
+    id: ID!
+    textBody: String
+    mediaUrl: String
+    skillHighlight: String
+    author: FeedAuthor!
+    warmLikes: Int!
+    prayerLikes: Int!
+    reshareCount: Int!
+    comments: [FeedComment!]!
+  }
+
   type MarketplaceCheckout {
     checkoutUrl: String!
   }
@@ -71,6 +149,16 @@ export const typeDefs = `
     user(id: ID!): User
     suggestMissions(query: String!): [Mission!]!
     missionPeerMatch(missionId: String!): MissionPeerMatch!
+    suggestedMissionPeers(userId: ID!): [MissionPeerSuggestion!]!
+    pathwayPeerMatch(academicFocus: String!, state: String, lga: String): PathwayPeerResult!
+    communitySearch(
+      education: PathwayStatus
+      missionId: ID
+      relationshipStatus: RelationshipStatus
+      talent: String
+      gender: Gender
+    ): [CommunitySearchUser!]!
+    feed(limit: Int = 20): [FeedPost!]!
     readSensitiveField(ownerUserId: ID!, field: SensitiveField!): String
   }
 
@@ -83,9 +171,26 @@ export const typeDefs = `
       isMember: Boolean
       missionId: ID
       pathwayStatus: PathwayStatus
+      profilePictureUrl: String
+      bio: String
+      country: String
+      birthday: String
+      relationshipStatus: RelationshipStatus
+      gender: Gender
+      servedMission: Boolean
+      isPathwayConnect: Boolean
+      isDegree: Boolean
+      isAlumni: Boolean
+      academicFocus: String
+      allowsBirthdayBroadcast: Boolean
+      safeSearchFemaleOnly: Boolean
+      safeSearchVerifiedMembersOnly: Boolean
       lga: String
       state: String
     ): User!
+
+    setFieldVisibility(userId: ID!, fieldKey: String!, visibility: VisibilityLevel!): Boolean!
+    setSafetyMode(userId: ID!, femaleOnly: Boolean!, verifiedMembersOnly: Boolean!): Boolean!
 
     updateSensitiveFields(userId: ID!, genotype: String, bloodGroup: String): Boolean!
     grantSensitiveField(ownerUserId: ID!, viewerUserId: ID!, field: SensitiveField!): Boolean!
@@ -94,11 +199,46 @@ export const typeDefs = `
     createMarketplaceCheckout(userId: ID!): MarketplaceCheckout!
     grantMeritAccess(userId: ID!, adminId: ID!, reason: String!): Boolean!
 
+    createPost(authorUserId: ID!, textBody: String, mediaUrl: String, skillHighlight: String): FeedPost!
+    reactToPost(postId: ID!, userId: ID!, kind: String!): Boolean!
+    resharePost(postId: ID!, userId: ID!, targetGroupId: String): Boolean!
+    addComment(postId: ID!, userId: ID!, body: String!): Boolean!
+
     sendChatMessage(senderUserId: ID!, roomId: String!, body: String!): ChatResult!
   }
 `;
 
+function ageFromBirthday(value?: Date | null) {
+  if (!value) {
+    return null;
+  }
+  const today = new Date();
+  let age = today.getFullYear() - value.getFullYear();
+  const monthDelta = today.getMonth() - value.getMonth();
+  if (monthDelta < 0 || (monthDelta == 0 && today.getDate() < value.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
 export const resolvers = {
+  User: {
+    age: (parent: { birthday?: Date | null }) => ageFromBirthday(parent.birthday),
+  },
+
+  FeedPost: {
+    warmLikes: (parent: any) => parent.reactions.filter((x: any) => x.kind === 'WARM_HEART').length,
+    prayerLikes: (parent: any) => parent.reactions.filter((x: any) => x.kind === 'PRAYER_HANDS').length,
+    reshareCount: (parent: any) => parent.reshares.length,
+    author: (parent: any) => parent.author,
+    comments: (parent: any) =>
+      parent.comments.map((comment: any) => ({
+        id: comment.id,
+        body: comment.body,
+        author: comment.user,
+      })),
+  },
+
   Query: {
     user: (_: unknown, args: { id: string }) => {
       return prisma.user.findUnique({
@@ -111,6 +251,48 @@ export const resolvers = {
     },
     missionPeerMatch: (_: unknown, args: { missionId: string }) => {
       return missionSearchService.missionPeerMatch(args.missionId);
+    },
+    suggestedMissionPeers: (_: unknown, args: { userId: string }) => {
+      return missionSearchService.suggestedMissionPeersForUser(args.userId);
+    },
+    pathwayPeerMatch: async (
+      _: unknown,
+      args: { academicFocus: string; state?: string; lga?: string }
+    ) => {
+      const summary = await missionSearchService.pathwayPeerMatch(args);
+      return { summary };
+    },
+    communitySearch: async (
+      _: unknown,
+      args: {
+        education?: 'CONNECT' | 'DEGREE' | 'ALUMNI';
+        missionId?: string;
+        relationshipStatus?: 'SINGLE' | 'MARRIED';
+        talent?: string;
+        gender?: 'MALE' | 'FEMALE';
+      }
+    ) => {
+      return prisma.user.findMany({
+        where: {
+          pathwayStatus: args.education,
+          missionId: args.missionId,
+          relationshipStatus: args.relationshipStatus,
+          gender: args.gender,
+          academicFocus: args.talent
+              ? {
+                  contains: args.talent,
+                  mode: 'insensitive'
+                }
+              : undefined,
+        } as any,
+        include: {
+          mission: true,
+        },
+        take: 50,
+      });
+    },
+    feed: async (_: unknown, args: { limit?: number }) => {
+      return feedService.feed(args.limit ?? 20);
     },
     readSensitiveField: (_: unknown, args: { ownerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: { userId: string }) => {
       return privacyVaultService.readSensitiveField(context.userId, args.ownerUserId, args.field);
@@ -131,22 +313,82 @@ export const resolvers = {
         isMember?: boolean;
         missionId?: string;
         pathwayStatus?: 'CONNECT' | 'DEGREE' | 'ALUMNI';
+        profilePictureUrl?: string;
+        bio?: string;
+        country?: string;
+        birthday?: string;
+        relationshipStatus?: 'SINGLE' | 'MARRIED';
+        gender?: 'MALE' | 'FEMALE';
+        servedMission?: boolean;
+        isPathwayConnect?: boolean;
+        isDegree?: boolean;
+        isAlumni?: boolean;
+        academicFocus?: string;
+        allowsBirthdayBroadcast?: boolean;
+        safeSearchFemaleOnly?: boolean;
+        safeSearchVerifiedMembersOnly?: boolean;
         lga?: string;
         state?: string;
       }
     ) => {
-      return prisma.user.update({
+      const updated = await prisma.user.update({
         where: { id: args.userId },
         data: {
           displayName: args.displayName,
+          profilePictureUrl: args.profilePictureUrl,
+          bio: args.bio,
+          country: args.country,
           isMember: args.isMember,
+          servedMission: args.servedMission,
+          birthday: args.birthday ? new Date(args.birthday) : undefined,
+          relationshipStatus: args.relationshipStatus,
+          gender: args.gender,
           missionId: args.missionId,
           pathwayStatus: args.pathwayStatus,
+          isPathwayConnect: args.isPathwayConnect,
+          isDegree: args.isDegree,
+          isAlumni: args.isAlumni,
+          academicFocus: args.academicFocus,
+          allowsBirthdayBroadcast: args.allowsBirthdayBroadcast,
+          safeSearchFemaleOnly: args.safeSearchFemaleOnly,
+          safeSearchVerifiedMembersOnly: args.safeSearchVerifiedMembersOnly,
           lga: args.lga,
           state: args.state
-        },
+        } as any,
         include: { mission: true }
       });
+
+      if (args.missionId && args.servedMission == true) {
+        await prisma.missionAlumni.create({
+          data: {
+            userId: args.userId,
+            missionId: args.missionId,
+            serviceYearFrom: new Date().getFullYear() - 2,
+            serviceYearTo: new Date().getFullYear(),
+          },
+        });
+      }
+
+      return updated;
+    },
+    setFieldVisibility: async (
+      _: unknown,
+      args: { userId: string; fieldKey: string; visibility: 'EVERYONE' | 'CONNECTIONS' | 'ONLY_ME' }
+    ) => {
+      return privacyVaultService.setVisibility(args.userId, args.fieldKey, args.visibility);
+    },
+    setSafetyMode: async (
+      _: unknown,
+      args: { userId: string; femaleOnly: boolean; verifiedMembersOnly: boolean }
+    ) => {
+      await prisma.user.update({
+        where: { id: args.userId },
+        data: {
+          safeSearchFemaleOnly: args.femaleOnly,
+          safeSearchVerifiedMembersOnly: args.verifiedMembersOnly,
+        },
+      });
+      return true;
     },
     updateSensitiveFields: async (_: unknown, args: { userId: string; genotype?: string; bloodGroup?: string }) => {
       await privacyVaultService.updateSensitiveFields(args.userId, args.genotype, args.bloodGroup);
@@ -166,6 +408,40 @@ export const resolvers = {
     },
     grantMeritAccess: async (_: unknown, args: { userId: string; adminId: string; reason: string }) => {
       await paymentService.grantMeritOverride(args.userId, args.adminId, args.reason);
+      return true;
+    },
+    createPost: async (
+      _: unknown,
+      args: {
+        authorUserId: string;
+        textBody?: string;
+        mediaUrl?: string;
+        skillHighlight?: string;
+      }
+    ) => {
+      const post = await feedService.createPost(args);
+      return {
+        ...post,
+        author: {
+          id: args.authorUserId,
+          displayName: 'Unknown',
+          profilePictureUrl: null,
+        },
+        reactions: [],
+        comments: [],
+        reshares: [],
+      };
+    },
+    reactToPost: async (_: unknown, args: { postId: string; userId: string; kind: 'WARM_HEART' | 'PRAYER_HANDS' }) => {
+      await feedService.reactToPost(args);
+      return true;
+    },
+    resharePost: async (_: unknown, args: { postId: string; userId: string; targetGroupId?: string }) => {
+      await feedService.resharePost(args);
+      return true;
+    },
+    addComment: async (_: unknown, args: { postId: string; userId: string; body: string }) => {
+      await feedService.addComment(args);
       return true;
     },
     sendChatMessage: async (_: unknown, args: { senderUserId: string; roomId: string; body: string }) => {
