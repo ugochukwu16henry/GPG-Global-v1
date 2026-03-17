@@ -116,7 +116,15 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const GNexusLogo(size: 40, variant: LogoSurfaceVariant.appIcon),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'GP_Global_logo.png',
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

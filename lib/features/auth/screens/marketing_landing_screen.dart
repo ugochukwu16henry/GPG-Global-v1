@@ -15,10 +15,26 @@ class MarketingLandingScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'GPG Gathering Place Global',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            'GP_Global_logo.png',
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'GPG Gathering Place Global',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   TextButton(
@@ -58,6 +74,16 @@ class MarketingLandingScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            'GP_Global_logo.png',
+                            width: 92,
+                            height: 92,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         const Text(
                           'A Safe, Spiritual, and Social Community',
                           textAlign: TextAlign.center,
