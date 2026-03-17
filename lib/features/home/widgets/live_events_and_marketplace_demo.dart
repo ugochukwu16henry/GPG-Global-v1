@@ -5,6 +5,7 @@ import '../../../core/branding/sonic_identity_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../backend/providers/backend_live_providers.dart';
 import '../../backend/providers/boundary_providers.dart';
+import '../screens/marketplace_success_screen.dart';
 import '../providers/mock_data_provider.dart';
 import 'g_nexus_logo.dart';
 import 'glass_card.dart';
@@ -372,7 +373,17 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                               ),
                               onSelected: (value) async {
                                 final controller = ref.read(boundaryControllerProvider.notifier);
-                                if (value == 'block') {
+                                if (value == 'success') {
+                                  Navigator.of(context).pushNamed(
+                                    '/marketplace-success',
+                                    arguments: MarketplaceSuccessPayload(
+                                      name: 'Brother Samuel',
+                                      skillName: listing.title,
+                                      location: listing.location,
+                                      listingId: listing.id,
+                                    ),
+                                  );
+                                } else if (value == 'block') {
                                   await controller.blockUser(
                                     blockedId: listing.id,
                                     reasonCode: 'HARASSMENT',
@@ -388,6 +399,10 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                 }
                               },
                               itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'success',
+                                  child: Text('Open Success Preview'),
+                                ),
                                 PopupMenuItem(
                                   value: 'block',
                                   child: Text('Block User'),

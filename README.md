@@ -29,3 +29,53 @@ flutter run
 
 - `lib/core/theme/` – colors and app theme
 - `lib/features/home/` – dashboard screen, widgets, Riverpod providers
+
+## Deep Linking (Talent + Mission Group)
+
+Implemented app routes:
+
+- `https://links.gpgglobal.app/talent/<id>` → in-app `/talent/:id`
+- `https://links.gpgglobal.app/mission-group/<id>` → in-app `/mission-group/:id`
+
+### Android App Links
+
+- Intent filters are configured in `android/app/src/main/AndroidManifest.xml`.
+- Host this file at `https://links.gpgglobal.app/.well-known/assetlinks.json`:
+
+```json
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.gpg.global.gpgGlobal",
+      "sha256_cert_fingerprints": ["<YOUR_RELEASE_SHA256_CERT_FINGERPRINT>"]
+    }
+  }
+]
+```
+
+### iOS Universal Links
+
+- Associated Domains entitlement stub is set in:
+  - `ios/Runner/Runner.entitlements`
+  - `ios/Runner.xcodeproj/project.pbxproj` (`CODE_SIGN_ENTITLEMENTS`)
+- Host this file at `https://links.gpgglobal.app/.well-known/apple-app-site-association` (no extension):
+
+```json
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "<APPLE_TEAM_ID>.com.gpg.global.gpgGlobal",
+        "paths": ["/talent/*", "/mission-group/*"]
+      }
+    ]
+  }
+}
+```
+
+### Fallback custom scheme
+
+- iOS URL scheme fallback: `gpgglobal://` (configured in `ios/Runner/Info.plist`).

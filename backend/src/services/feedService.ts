@@ -8,11 +8,25 @@ export const feedService = {
     textBody,
     mediaUrl,
     skillHighlight,
+    videoCodec,
+    sourceResolution,
+    availableResolutions,
+    captions,
+    moderationTags,
+    isHiddenPendingReview,
+    copyrightBlocked,
   }: {
     authorUserId: string;
     textBody?: string;
     mediaUrl?: string;
     skillHighlight?: string;
+    videoCodec?: string;
+    sourceResolution?: string;
+    availableResolutions?: string[];
+    captions?: string[];
+    moderationTags?: string[];
+    isHiddenPendingReview?: boolean;
+    copyrightBlocked?: boolean;
   }) {
     return prisma.post.create({
       data: {
@@ -20,6 +34,13 @@ export const feedService = {
         textBody,
         mediaUrl,
         skillHighlight,
+        videoCodec,
+        sourceResolution,
+        availableResolutions,
+        captions,
+        moderationTags,
+        isHiddenPendingReview,
+        copyrightBlocked,
       },
     });
   },
@@ -73,10 +94,12 @@ export const feedService = {
     postId,
     userId,
     body,
+    timestampSeconds,
   }: {
     postId: string;
     userId: string;
     body: string;
+    timestampSeconds?: number;
   }) {
     const moderation = await moderationService.moderateMessage(body);
     if (moderation.violates && moderation.severity !== 'LOW') {
@@ -88,6 +111,7 @@ export const feedService = {
         postId,
         userId,
         body,
+        timestampSeconds,
       },
     });
   },
@@ -100,6 +124,8 @@ export const feedService = {
     final rows = await prisma.post.findMany({
       take: limit,
       where: {
+        isHiddenPendingReview: false,
+        copyrightBlocked: false,
         authorUserId: blockedIds.isEmpty
             ? undefined
             : {

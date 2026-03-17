@@ -191,6 +191,11 @@ class FeedItem {
     this.subtitle,
     this.isVideo = true,
     this.avatarUrl,
+    this.videoAspect = VideoAspect.landscape,
+    this.autoCaptions = const <String>[],
+    this.moderationTags = const <String>[],
+    this.timestampComments = const <VideoTimestampComment>[],
+    this.hireEnabled = false,
   });
 
   final String id;
@@ -198,6 +203,27 @@ class FeedItem {
   final String? subtitle;
   final bool isVideo;
   final String? avatarUrl;
+  final VideoAspect videoAspect;
+  final List<String> autoCaptions;
+  final List<String> moderationTags;
+  final List<VideoTimestampComment> timestampComments;
+  final bool hireEnabled;
+}
+
+enum VideoAspect {
+  vertical,
+  square,
+  landscape,
+}
+
+class VideoTimestampComment {
+  const VideoTimestampComment({
+    required this.seconds,
+    required this.body,
+  });
+
+  final int seconds;
+  final String body;
 }
 
 final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
@@ -207,24 +233,58 @@ final gatheringFeedProvider = Provider<List<FeedItem>>((ref) {
       title: 'Welcome to GPG Gathering',
       subtitle: 'BYU-Pathway · 2h ago',
       isVideo: true,
+      videoAspect: VideoAspect.vertical,
+      autoCaptions: [
+        'Welcome home to the Gathering Place.',
+        'We grow by faith, friendship, and service.',
+      ],
+      moderationTags: ['Missionary Work'],
+      timestampComments: [
+        VideoTimestampComment(seconds: 12, body: 'Love this intro!'),
+        VideoTimestampComment(seconds: 45, body: 'I felt this testimony.'),
+      ],
     ),
     FeedItem(
       id: '2',
       title: 'Study group highlights',
       subtitle: 'Lagos YSA · 5h ago',
       isVideo: true,
+      videoAspect: VideoAspect.landscape,
+      autoCaptions: [
+        'Final-year pathway prep in progress.',
+        'Keep moving one assignment at a time.',
+      ],
+      moderationTags: ['BYU-Pathway Lecture'],
+      timestampComments: [
+        VideoTimestampComment(seconds: 30, body: 'This solved my confusion.'),
+      ],
     ),
     FeedItem(
       id: '3',
       title: 'Mission reunion recap',
       subtitle: 'Nigeria Lagos Mission · 1d ago',
       isVideo: true,
+      videoAspect: VideoAspect.square,
+      autoCaptions: [
+        'Reunion service project this Saturday.',
+        'Invite your mission peers to join.',
+      ],
+      moderationTags: ['Missionary Work', 'Community'],
+      timestampComments: [
+        VideoTimestampComment(seconds: 8, body: 'Great memories here.'),
+      ],
     ),
     FeedItem(
       id: '4',
       title: 'Marketplace success story',
       subtitle: 'Community · 2d ago',
       isVideo: false,
+      videoAspect: VideoAspect.square,
+      moderationTags: ['Skill Showcase'],
+      hireEnabled: true,
+      timestampComments: [
+        VideoTimestampComment(seconds: 14, body: 'Hire button worked for me!'),
+      ],
     ),
   ];
 });

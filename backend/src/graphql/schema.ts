@@ -166,6 +166,7 @@ export const typeDefs = `
   type FeedComment {
     id: ID!
     body: String!
+    timestampSeconds: Int
     author: FeedAuthor!
   }
 
@@ -174,6 +175,13 @@ export const typeDefs = `
     textBody: String
     mediaUrl: String
     skillHighlight: String
+    videoCodec: String
+    sourceResolution: String
+    availableResolutions: [String!]
+    captions: [String!]
+    moderationTags: [String!]
+    isHiddenPendingReview: Boolean!
+    copyrightBlocked: Boolean!
     author: FeedAuthor!
     warmLikes: Int!
     prayerLikes: Int!
@@ -320,10 +328,22 @@ export const typeDefs = `
     createMarketplaceCheckout(userId: ID!): MarketplaceCheckout!
     grantMeritAccess(userId: ID!, adminId: ID!, reason: String!): Boolean!
 
-    createPost(authorUserId: ID!, textBody: String, mediaUrl: String, skillHighlight: String): FeedPost!
+    createPost(
+      authorUserId: ID!
+      textBody: String
+      mediaUrl: String
+      skillHighlight: String
+      videoCodec: String
+      sourceResolution: String
+      availableResolutions: [String!]
+      captions: [String!]
+      moderationTags: [String!]
+      isHiddenPendingReview: Boolean
+      copyrightBlocked: Boolean
+    ): FeedPost!
     reactToPost(postId: ID!, userId: ID!, kind: String!): Boolean!
     resharePost(postId: ID!, userId: ID!, targetGroupId: String): Boolean!
-    addComment(postId: ID!, userId: ID!, body: String!): Boolean!
+    addComment(postId: ID!, userId: ID!, body: String!, timestampSeconds: Int): Boolean!
 
     adminSuspendUser(adminUserId: ID!, userId: ID!, hours: Int!, reason: String): Boolean!
     adminShadowBanUser(adminUserId: ID!, userId: ID!, reason: String): Boolean!
@@ -419,6 +439,7 @@ export const resolvers = {
       parent.comments.map((comment: any) => ({
         id: comment.id,
         body: comment.body,
+        timestampSeconds: comment.timestampSeconds,
         author: comment.user,
       })),
   },
@@ -491,7 +512,7 @@ export const resolvers = {
     },
     blockedAccounts: async (_: unknown, args: { userId: string }) => {
       const rows = await boundaryService.blockedAccounts(args.userId);
-      return rows.map((row) => ({
+      return rows.map((row: any) => ({
         userId: row.blocked.id,
         displayName: row.blocked.displayName,
         profilePictureUrl: row.blocked.profilePictureUrl,
@@ -503,14 +524,14 @@ export const resolvers = {
       args: { userId: string; latitude: number; longitude: number; radiusMiles?: number }
     ) => {
       const rows = await gatheringService.suggestNearbyGatheringPlaces(args);
-      return rows.map((place) => ({
+      return rows.map((place: any) => ({
         id: place.id,
         name: place.name,
         country: place.country,
         stateOrCity: place.stateOrCity,
         lga: place.lga,
         distanceMiles: place.distanceMiles,
-        groups: place.groups.map((group) => ({
+        groups: place.groups.map((group: any) => ({
           id: group.id,
           name: group.name,
           level: group.level,
@@ -522,7 +543,7 @@ export const resolvers = {
     },
     userGatheringGroups: async (_: unknown, args: { userId: string }) => {
       const rows = await gatheringService.groupsForUser(args.userId);
-      return rows.map((row) => ({
+      return rows.map((row: any) => ({
         id: row.group.id,
         name: row.group.name,
         level: row.group.level,
@@ -660,6 +681,13 @@ export const resolvers = {
         textBody?: string;
         mediaUrl?: string;
         skillHighlight?: string;
+        videoCodec?: string;
+        sourceResolution?: string;
+        availableResolutions?: string[];
+        captions?: string[];
+        moderationTags?: string[];
+        isHiddenPendingReview?: boolean;
+        copyrightBlocked?: boolean;
       }
     ) => {
       const post = await feedService.createPost(args);
@@ -670,6 +698,13 @@ export const resolvers = {
           displayName: 'Unknown',
           profilePictureUrl: null,
         },
+        videoCodec: args.videoCodec,
+        sourceResolution: args.sourceResolution,
+        availableResolutions: args.availableResolutions ?? [],
+        captions: args.captions ?? [],
+        moderationTags: args.moderationTags ?? [],
+        isHiddenPendingReview: args.isHiddenPendingReview ?? false,
+        copyrightBlocked: args.copyrightBlocked ?? false,
         reactions: [],
         comments: [],
         reshares: [],
@@ -683,7 +718,7 @@ export const resolvers = {
       await feedService.resharePost(args);
       return true;
     },
-    addComment: async (_: unknown, args: { postId: string; userId: string; body: string }) => {
+    addComment: async (_: unknown, args: { postId: string; userId: string; body: string; timestampSeconds?: number }) => {
       await feedService.addComment(args);
       return true;
     },

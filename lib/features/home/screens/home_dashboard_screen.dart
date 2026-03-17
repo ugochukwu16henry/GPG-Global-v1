@@ -176,6 +176,33 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => Navigator.of(context).pushNamed('/app-flow-map'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.pathwayAmber.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.hub_rounded, size: 16, color: AppColors.primaryNavy),
+                  SizedBox(width: 6),
+                  Text(
+                    'Flow Map',
+                    style: TextStyle(
+                      color: AppColors.primaryNavy,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

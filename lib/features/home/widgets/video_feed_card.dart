@@ -1,12 +1,14 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../backend/providers/boundary_providers.dart';
 import '../providers/mock_data_provider.dart';
 import 'glass_card.dart';
 
-/// Single video/post card: 12px rounded corners and overlay "Hire Talent" button.
-class VideoFeedCard extends ConsumerWidget {
+class VideoFeedCard extends ConsumerStatefulWidget {
   const VideoFeedCard({
     super.key,
     required this.item,
@@ -15,7 +17,68 @@ class VideoFeedCard extends ConsumerWidget {
   final FeedItem item;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VideoFeedCard> createState() => _VideoFeedCardState();
+}
+
+class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
+  bool _isMuted = true;
+  bool _isPlaying = false;
+  bool _showCaptions = true;
+  ScrollPosition? _scrollPosition;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateVisibilityPlayback());
+    final position = Scrollable.of(context).position;
+    if (_scrollPosition != position) {
+      _scrollPosition?.removeListener(_updateVisibilityPlayback);
+      _scrollPosition = position;
+      _scrollPosition?.addListener(_updateVisibilityPlayback);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollPosition?.removeListener(_updateVisibilityPlayback);
+    _scrollPosition = null;
+    super.dispose();
+  }
+
+  void _updateVisibilityPlayback() {
+    if (!mounted) return;
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
+
+    final size = renderObject.size;
+    if (size.height <= 0) return;
+
+    final topLeft = renderObject.localToGlobal(Offset.zero);
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+
+    final visibleTop = math.max(0.0, topLeft.dy);
+    final visibleBottom = math.min(viewportHeight, topLeft.dy + size.height);
+    final visibleHeight = math.max(0.0, visibleBottom - visibleTop);
+    final visibleRatio = visibleHeight / size.height;
+
+    final shouldPlay = visibleRatio >= 0.5;
+    if (shouldPlay != _isPlaying) {
+      setState(() => _isPlaying = shouldPlay);
+    }
+  }
+
+  double _aspectRatio() {
+    return switch (widget.item.videoAspect) {
+      VideoAspect.vertical => 9 / 16,
+      VideoAspect.square => 1,
+      VideoAspect.landscape => 16 / 9,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+
     return GlassCard(
       borderRadius: 12,
       padding: EdgeInsets.zero,
@@ -24,9 +87,8 @@ class VideoFeedCard extends ConsumerWidget {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            // Placeholder for video thumbnail
             AspectRatio(
-              aspectRatio: 16 / 9,
+              aspectRatio: _aspectRatio(),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -34,20 +96,85 @@ class VideoFeedCard extends ConsumerWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       AppColors.primaryNavy.withValues(alpha: 0.85),
-                      AppColors.primaryNavy.withValues(alpha: 0.6),
+                      AppColors.primaryNavy.withValues(alpha: 0.58),
                     ],
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    item.isVideo ? Icons.play_circle_filled : Icons.article_outlined,
-                    size: 48,
-                    color: AppColors.pathwayAmber.withValues(alpha: 0.9),
-                  ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Icon(
+                        item.isVideo
+                            ? (_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled)
+                            : Icons.article_outlined,
+                        size: 52,
+                        color: AppColors.pathwayAmber.withValues(alpha: 0.95),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _isPlaying ? (_isMuted ? 'Auto-play · Muted' : 'Auto-play · Sound On') : 'Paused',
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => setState(() => _isMuted = !_isMuted),
+                          ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              _showCaptions ? Icons.closed_caption : Icons.closed_caption_disabled,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => setState(() => _showCaptions = !_showCaptions),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_showCaptions && item.autoCaptions.isNotEmpty)
+                      Positioned(
+                        left: 12,
+                        right: 12,
+                        bottom: 76,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            item.autoCaptions.first,
+                            style: const TextStyle(color: Colors.white, fontSize: 11),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            // Overlay gradient and "Hire Talent" button
             Positioned(
               left: 0,
               right: 0,
@@ -60,7 +187,7 @@ class VideoFeedCard extends ConsumerWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      AppColors.primaryNavy.withValues(alpha: 0.75),
+                      AppColors.primaryNavy.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -72,7 +199,7 @@ class VideoFeedCard extends ConsumerWidget {
                       item.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         fontSize: 14,
                       ),
                       maxLines: 1,
@@ -86,7 +213,7 @@ class VideoFeedCard extends ConsumerWidget {
                             child: Text(
                               item.subtitle!,
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: Colors.white.withValues(alpha: 0.82),
                                 fontSize: 11,
                               ),
                               maxLines: 1,
@@ -117,49 +244,84 @@ class VideoFeedCard extends ConsumerWidget {
                               }
                             },
                             itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'block',
-                                child: Text('Block User'),
-                              ),
-                              PopupMenuItem(
-                                value: 'mute',
-                                child: Text('Mute User'),
-                              ),
-                              PopupMenuItem(
-                                value: 'report',
-                                child: Text('Report User'),
-                              ),
+                              PopupMenuItem(value: 'block', child: Text('Block User')),
+                              PopupMenuItem(value: 'mute', child: Text('Mute User')),
+                              PopupMenuItem(value: 'report', child: Text('Report User')),
                             ],
                           ),
                         ],
                       ),
                     ],
+                    if (item.moderationTags.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: item.moderationTags
+                            .map(
+                              (tag) => Chip(
+                                visualDensity: VisualDensity.compact,
+                                label: Text(tag, style: const TextStyle(fontSize: 10)),
+                                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                                side: BorderSide.none,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                    if (item.timestampComments.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      ...item.timestampComments.take(2).map(
+                            (comment) => Text(
+                              '@${comment.seconds}s · ${comment.body}',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.88),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                    ],
                     const SizedBox(height: 8),
-                    Material(
-                      color: AppColors.pathwayAmber,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
-                        onTap: () {},
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.person_search, size: 16, color: AppColors.primaryNavy),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Hire Talent',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  color: AppColors.primaryNavy,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (item.hireEnabled || item.moderationTags.contains('Skill Showcase'))
+                          Material(
+                            color: AppColors.pathwayAmber,
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              onTap: () {},
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.person_search, size: 16, color: AppColors.primaryNavy),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Hire this Talent',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        color: AppColors.primaryNavy,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
+                        FilledButton.tonal(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Reshared to Mission Peer / Gathering Place group.')),
+                            );
+                          },
+                          child: const Text('Forward Reshare'),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

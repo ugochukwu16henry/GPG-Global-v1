@@ -280,6 +280,13 @@ model Post {
   textBody       String?
   mediaUrl       String?
   skillHighlight String?
+  videoCodec     String?
+  sourceResolution String?
+  availableResolutions Json?
+  captions       Json?
+  moderationTags Json?
+  isHiddenPendingReview Boolean @default(false)
+  copyrightBlocked Boolean @default(false)
   createdAt      DateTime @default(now())
 
   author         User @relation(fields: [authorUserId], references: [id])
@@ -308,6 +315,7 @@ model PostComment {
   postId         String
   userId         String
   body           String
+  timestampSeconds Int?
   createdAt      DateTime @default(now())
 
   post           Post @relation(fields: [postId], references: [id])
