@@ -330,6 +330,62 @@ class BackendGateway {
     return result['id'] as String;
   }
 
+  Future<Map<String, String>> verifyPhoneOtpSession({
+    required String phone,
+    required String otpCode,
+    String? displayName,
+    bool? isMember,
+  }) async {
+    final data = await _query(
+      '''
+      mutation VerifyPhoneOtpSession(
+        ${r'$'}phone: String!,
+        ${r'$'}otpCode: String!,
+        ${r'$'}displayName: String,
+        ${r'$'}isMember: Boolean
+      ) {
+        verifyPhoneOtpSession(
+          phone: ${r'$'}phone,
+          otpCode: ${r'$'}otpCode,
+          displayName: ${r'$'}displayName,
+          isMember: ${r'$'}isMember
+        ) {
+          user {
+            id
+            displayName
+            isMember
+          }
+          session {
+            userId
+            role
+            sessionToken
+            expiresAt
+          }
+        }
+      }
+      ''',
+      variables: {
+        'phone': phone,
+        'otpCode': otpCode,
+        'displayName': displayName,
+        'isMember': isMember,
+      },
+    );
+
+    final result = data['verifyPhoneOtpSession'] as Map<String, dynamic>;
+    final user = result['user'] as Map<String, dynamic>;
+    final session = result['session'] as Map<String, dynamic>;
+
+    return {
+      'userId': session['userId'].toString(),
+      'role': session['role'].toString(),
+      'sessionToken': session['sessionToken'].toString(),
+      'expiresAt': session['expiresAt'].toString(),
+      'displayName': user['displayName'].toString(),
+      'isMember': user['isMember'].toString(),
+    };
+  }
+
   Future<Map<String, String>> issueAdminSession(String adminSecret) async {
     final data = await _query(
       '''
@@ -352,6 +408,85 @@ class BackendGateway {
       'sessionToken': result['sessionToken'].toString(),
       'expiresAt': result['expiresAt'].toString(),
     };
+  }
+
+  Future<Map<String, String>> createModeratorInviteCode({
+    required String adminUserId,
+    required String gatheringPlace,
+    required String roleLabel,
+  }) async {
+    final data = await _query(
+      '''
+      mutation CreateModeratorInviteCode(
+        ${r'$'}adminUserId: ID!,
+        ${r'$'}gatheringPlace: String!,
+        ${r'$'}roleLabel: String!
+      ) {
+        createModeratorInviteCode(
+          adminUserId: ${r'$'}adminUserId,
+          gatheringPlace: ${r'$'}gatheringPlace,
+          roleLabel: ${r'$'}roleLabel
+        ) {
+          id
+          code
+          gatheringPlace
+          roleLabel
+          isActive
+          createdAt
+        }
+      }
+      ''',
+      variables: {
+        'adminUserId': adminUserId,
+        'gatheringPlace': gatheringPlace,
+        'roleLabel': roleLabel,
+      },
+    );
+
+    final result = data['createModeratorInviteCode'] as Map<String, dynamic>;
+    return result.map((key, value) => MapEntry(key, value.toString()));
+  }
+
+  Future<List<Map<String, dynamic>>> moderatorInviteCodes({int limit = 20}) async {
+    final data = await _query(
+      '''
+      query ModeratorInviteCodes(${r'$'}limit: Int) {
+        moderatorInviteCodes(limit: ${r'$'}limit) {
+          id
+          code
+          gatheringPlace
+          roleLabel
+          isActive
+          createdAt
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['moderatorInviteCodes'] as List<dynamic>;
+    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+  }
+
+  Future<Map<String, String>> redeemModeratorInviteCode(String code) async {
+    final data = await _query(
+      '''
+      mutation RedeemModeratorInviteCode(${r'$'}code: String!) {
+        redeemModeratorInviteCode(code: ${r'$'}code) {
+          userId
+          role
+          sessionToken
+          expiresAt
+          gatheringPlace
+          roleLabel
+        }
+      }
+      ''',
+      variables: {'code': code},
+    );
+
+    final result = data['redeemModeratorInviteCode'] as Map<String, dynamic>;
+    return result.map((key, value) => MapEntry(key, value.toString()));
   }
 
   Future<void> adminSuspendUser({

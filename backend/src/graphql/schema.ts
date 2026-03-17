@@ -10,6 +10,7 @@ import { boundaryService } from '../services/boundaryService.js';
 import { gatheringService } from '../services/gatheringService.js';
 import { safetyService } from '../services/safetyService.js';
 import { sessionService } from '../services/sessionService.js';
+import { moderatorInviteService } from '../services/moderatorInviteService.js';
 
 export const typeDefs = `
   enum PathwayStatus {
@@ -135,6 +136,29 @@ export const typeDefs = `
     role: String!
     sessionToken: String!
     expiresAt: String!
+  }
+
+  type AuthSessionResult {
+    user: User!
+    session: SessionTokenPayload!
+  }
+
+  type ModeratorInviteCode {
+    id: ID!
+    code: String!
+    gatheringPlace: String!
+    roleLabel: String!
+    isActive: Boolean!
+    createdAt: String!
+  }
+
+  type ModeratorSessionResult {
+    userId: ID!
+    role: String!
+    sessionToken: String!
+    expiresAt: String!
+    gatheringPlace: String!
+    roleLabel: String!
   }
 
   type MissionPeerMatch {
@@ -295,6 +319,7 @@ export const typeDefs = `
     nearbyGatheringPlaces(userId: ID!, latitude: Float!, longitude: Float!, radiusMiles: Float = 20): [GatheringPlaceSummary!]!
     userGatheringGroups(userId: ID!): [GatheringGroupSummary!]!
     breakGlassBundles(limit: Int = 20): [BreakGlassReportBundle!]!
+    moderatorInviteCodes(limit: Int = 20): [ModeratorInviteCode!]!
     adminActionLogs(limit: Int = 50): [AdminActionLog!]!
     readSensitiveField(ownerUserId: ID!, field: SensitiveField!): String
   }
@@ -302,7 +327,10 @@ export const typeDefs = `
   type Mutation {
     sendPhoneOtp(phone: String!): OtpDispatch!
     verifyPhoneOtp(phone: String!, otpCode: String!): User!
+    verifyPhoneOtpSession(phone: String!, otpCode: String!, displayName: String, isMember: Boolean): AuthSessionResult!
     issueAdminSession(adminSecret: String!): SessionTokenPayload!
+    createModeratorInviteCode(gatheringPlace: String!, roleLabel: String!, adminUserId: ID!): ModeratorInviteCode!
+    redeemModeratorInviteCode(code: String!): ModeratorSessionResult!
     setUserProfile(
       userId: ID!
       displayName: String
@@ -602,6 +630,10 @@ export const resolvers = {
       requireRole(context, ['moderator', 'admin']);
       return safetyService.listBundles(args.limit ?? 20);
     },
+    moderatorInviteCodes: (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      return moderatorInviteService.listInviteCodes(args.limit ?? 20);
+    },
     adminActionLogs: (_: unknown, args: { limit?: number }, context: RequestContext) => {
       requireRole(context, ['admin']);
       return adminService.recentLogs(args.limit ?? 50);
@@ -618,8 +650,28 @@ export const resolvers = {
       const { user } = await authService.verifyPhoneOtp(args.phone, args.otpCode);
       return user;
     },
+    verifyPhoneOtpSession: async (
+      _: unknown,
+      args: { phone: string; otpCode: string; displayName?: string; isMember?: boolean }
+    ) => {
+      return authService.verifyPhoneOtpSession(args);
+    },
     issueAdminSession: async (_: unknown, args: { adminSecret: string }) => {
       return sessionService.issueAdminSession(args.adminSecret);
+    },
+    createModeratorInviteCode: async (
+      _: unknown,
+      args: { gatheringPlace: string; roleLabel: string; adminUserId: string },
+      context: RequestContext
+    ) => {
+      requireRole(context, ['admin']);
+      if (context.userId != args.adminUserId) {
+        throw new Error('Admin identity mismatch.');
+      }
+      return moderatorInviteService.createInviteCode(args);
+    },
+    redeemModeratorInviteCode: async (_: unknown, args: { code: string }) => {
+      return moderatorInviteService.redeemInviteCode(args.code);
     },
     setUserProfile: async (
       _: unknown,

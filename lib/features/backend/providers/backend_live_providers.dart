@@ -204,12 +204,28 @@ class BackendAuthController extends StateNotifier<BackendAuthState> {
     }
   }
 
-  Future<void> verifyOtp({required String phone, required String otpCode}) async {
+  Future<void> verifyOtp({
+    required String phone,
+    required String otpCode,
+    String? displayName,
+    bool? isMember,
+  }) async {
     state = state.copyWith(isLoading: true, error: null, message: null);
     try {
       final gateway = _read.read(backendGatewayProvider);
-      final userId = await gateway.verifyPhoneOtp(phone: phone, otpCode: otpCode);
+      final result = await gateway.verifyPhoneOtpSession(
+        phone: phone,
+        otpCode: otpCode,
+        displayName: displayName,
+        isMember: isMember,
+      );
+      final userId = result['userId']!;
       _read.read(backendUserIdProvider.notifier).state = userId;
+      _read.read(sessionControllerProvider.notifier).setUserSession(
+            displayName: result['displayName'] ?? displayName ?? 'User',
+            identity: (result['isMember'] == 'true') ? CommunityIdentity.member : CommunityIdentity.friendSeeker,
+            sessionToken: result['sessionToken']!,
+          );
       state = state.copyWith(
         isLoading: false,
         phone: phone,
@@ -227,6 +243,67 @@ class BackendAuthController extends StateNotifier<BackendAuthState> {
 final backendAuthControllerProvider =
     StateNotifierProvider<BackendAuthController, BackendAuthState>((ref) {
   return BackendAuthController(ref);
+});
+
+class ModeratorInviteCodeState {
+  const ModeratorInviteCodeState({
+    this.isLoading = false,
+    this.items = const <Map<String, dynamic>>[],
+    this.error,
+  });
+
+  final bool isLoading;
+  final List<Map<String, dynamic>> items;
+  final String? error;
+
+  ModeratorInviteCodeState copyWith({
+    bool? isLoading,
+    List<Map<String, dynamic>>? items,
+    String? error,
+  }) {
+    return ModeratorInviteCodeState(
+      isLoading: isLoading ?? this.isLoading,
+      items: items ?? this.items,
+      error: error,
+    );
+  }
+}
+
+class ModeratorInviteCodeBackendController extends StateNotifier<ModeratorInviteCodeState> {
+  ModeratorInviteCodeBackendController(this._read) : super(const ModeratorInviteCodeState());
+
+  final Ref _read;
+
+  Future<void> refresh() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final gateway = _read.read(backendGatewayProvider);
+      final items = await gateway.moderatorInviteCodes(limit: 20);
+      state = state.copyWith(isLoading: false, items: items);
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+    }
+  }
+
+  Future<void> generate({required String gatheringPlace, required String roleLabel}) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final gateway = _read.read(backendGatewayProvider);
+      final adminUserId = _read.read(backendUserIdProvider);
+      await gateway.createModeratorInviteCode(
+        adminUserId: adminUserId,
+        gatheringPlace: gatheringPlace,
+        roleLabel: roleLabel,
+      );
+      await refresh();
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+    }
+  }
+}
+
+final moderatorInviteCodeBackendProvider = StateNotifierProvider<ModeratorInviteCodeBackendController, ModeratorInviteCodeState>((ref) {
+  return ModeratorInviteCodeBackendController(ref);
 });
 
 class GatheringPlaceState {

@@ -196,6 +196,21 @@ model AuthOtp {
   @@index([phone, expiresAt])
 }
 
+model ModeratorInviteCode {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  gatheringPlace   String
+  roleLabel        String
+  createdByAdminId String
+  isActive         Boolean  @default(true)
+  consumedAt       DateTime?
+  consumedByUserId String?
+  createdAt        DateTime @default(now())
+
+  @@index([gatheringPlace, createdAt])
+  @@index([isActive, createdAt])
+}
+
 model PrivacyGrant {
   id             String @id @default(cuid())
   ownerUserId    String

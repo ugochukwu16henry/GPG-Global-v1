@@ -20,6 +20,8 @@ class AuthEntryScreen extends ConsumerStatefulWidget {
 
 class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
   final _codeController = TextEditingController();
   final _secretController = TextEditingController();
   CommunityIdentity _identity = CommunityIdentity.friendSeeker;
@@ -27,6 +29,8 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
+    _otpController.dispose();
     _codeController.dispose();
     _secretController.dispose();
     super.dispose();
@@ -47,21 +51,41 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
 
     switch (widget.mode) {
       case AuthEntryMode.userSignIn:
-        sessionController.signInUser(displayName: _nameController.text.trim().isEmpty ? 'User' : _nameController.text.trim());
-        if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/user-app', (_) => false);
+        await ref.read(backendAuthControllerProvider.notifier).verifyOtp(
+              phone: _phoneController.text.trim(),
+              otpCode: _otpController.text.trim(),
+              displayName: _nameController.text.trim().isEmpty ? 'User' : _nameController.text.trim(),
+              isMember: null,
+            );
+        if (mounted && ref.read(sessionControllerProvider).role == AppRole.user) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/user-app', (_) => false);
+        }
         break;
       case AuthEntryMode.userSignUp:
-        sessionController.signUpUser(
-          displayName: _nameController.text.trim().isEmpty ? 'New User' : _nameController.text.trim(),
-          identity: _identity,
-        );
-        if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/user-app', (_) => false);
+        await ref.read(backendAuthControllerProvider.notifier).verifyOtp(
+              phone: _phoneController.text.trim(),
+              otpCode: _otpController.text.trim(),
+              displayName: _nameController.text.trim().isEmpty ? 'New User' : _nameController.text.trim(),
+              isMember: _identity == CommunityIdentity.member,
+            );
+        if (mounted && ref.read(sessionControllerProvider).role == AppRole.user) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/user-app', (_) => false);
+        }
         break;
       case AuthEntryMode.moderatorSignIn:
       case AuthEntryMode.moderatorSignUp:
-        final ok = sessionController.signInModeratorWithCode(_codeController.text.trim());
-        if (ok && mounted) {
+        try {
+          final gateway = ref.read(backendGatewayProvider);
+          final result = await gateway.redeemModeratorInviteCode(_codeController.text.trim());
+          sessionController.setModeratorSession(
+            sessionToken: result['sessionToken']!,
+            gatheringPlace: result['gatheringPlace']!,
+            moderatorRole: result['roleLabel']!,
+          );
+          ref.read(backendUserIdProvider.notifier).state = result['userId']!;
           Navigator.of(context).pushNamedAndRemoveUntil('/moderator-dashboard', (_) => false);
+        } catch (error) {
+          sessionController.setStatusMessage(error.toString());
         }
         break;
       case AuthEntryMode.adminSignIn:
@@ -74,8 +98,8 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
           );
           ref.read(backendUserIdProvider.notifier).state = result['userId']!;
           Navigator.of(context).pushNamedAndRemoveUntil('/admin-dashboard', (_) => false);
-        } catch (_) {
-          sessionController.signInAdmin(_secretController.text.trim());
+        } catch (error) {
+          sessionController.setStatusMessage(error.toString());
         }
         break;
     }
@@ -84,6 +108,7 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(sessionControllerProvider).statusMessage;
+    final authState = ref.watch(backendAuthControllerProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(_title())),
@@ -98,6 +123,37 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
                   controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Display Name'),
                 ),
+              if (widget.mode == AuthEntryMode.userSignIn || widget.mode == AuthEntryMode.userSignUp) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: 'Phone Number'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _otpController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'OTP Code'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonal(
+                      onPressed: authState.isLoading
+                          ? null
+                          : () => ref.read(backendAuthControllerProvider.notifier).sendOtp(_phoneController.text.trim()),
+                      child: const Text('Send OTP'),
+                    ),
+                  ],
+                ),
+                if (authState.devOtpPreview != null) ...[
+                  const SizedBox(height: 8),
+                  Text('Dev OTP preview: ${authState.devOtpPreview}'),
+                ],
+              ],
               if (widget.mode == AuthEntryMode.userSignUp) ...[
                 const SizedBox(height: 14),
                 const Text('How would you like to join us today?', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -131,9 +187,17 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
                 ),
               const SizedBox(height: 18),
               FilledButton(
-                onPressed: _submit,
+                  onPressed: authState.isLoading ? null : _submit,
                 child: const Text('Continue'),
               ),
+                if (authState.message != null) ...[
+                  const SizedBox(height: 10),
+                  Text(authState.message!, style: const TextStyle(color: Colors.green)),
+                ],
+                if (authState.error != null) ...[
+                  const SizedBox(height: 10),
+                  Text(authState.error!, style: const TextStyle(color: Colors.red)),
+                ],
               if (status != null) ...[
                 const SizedBox(height: 10),
                 Text(status, style: const TextStyle(color: Colors.red)),

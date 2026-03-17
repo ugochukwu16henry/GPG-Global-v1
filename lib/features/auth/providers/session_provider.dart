@@ -1,36 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum AppRole { guest, user, moderator, admin }
 
 enum CommunityIdentity { member, friendSeeker }
-
-class ModeratorInviteCode {
-  const ModeratorInviteCode({
-    required this.code,
-    required this.gatheringPlace,
-    required this.role,
-    required this.createdAt,
-    this.isActive = true,
-  });
-
-  final String code;
-  final String gatheringPlace;
-  final String role;
-  final DateTime createdAt;
-  final bool isActive;
-
-  ModeratorInviteCode copyWith({bool? isActive}) {
-    return ModeratorInviteCode(
-      code: code,
-      gatheringPlace: gatheringPlace,
-      role: role,
-      createdAt: createdAt,
-      isActive: isActive ?? this.isActive,
-    );
-  }
-}
 
 class SessionState {
   const SessionState({
@@ -74,61 +46,8 @@ class SessionState {
   }
 }
 
-class ModeratorInviteCodeController extends StateNotifier<List<ModeratorInviteCode>> {
-  ModeratorInviteCodeController()
-      : super(const [
-          ModeratorInviteCode(
-            code: 'LAGOS-MOD-2026',
-            gatheringPlace: 'Lagos Island Gathering Place',
-            role: 'Service Moderator',
-            createdAt: DateTime(2026, 3, 17),
-          ),
-        ]);
-
-  String generateCode({required String gatheringPlace, required String role}) {
-    final random = Random();
-    final suffix = (1000 + random.nextInt(9000)).toString();
-    final safePlace = gatheringPlace
-        .split(' ')
-        .take(1)
-        .join()
-        .toUpperCase()
-        .replaceAll(RegExp(r'[^A-Z]'), '');
-    final code = '${safePlace.isEmpty ? 'GPG' : safePlace}-$suffix';
-
-    state = [
-      ModeratorInviteCode(
-        code: code,
-        gatheringPlace: gatheringPlace,
-        role: role,
-        createdAt: DateTime.now(),
-      ),
-      ...state,
-    ];
-    return code;
-  }
-
-  ModeratorInviteCode? consumeCode(String code) {
-    final index = state.indexWhere((item) => item.code == code && item.isActive);
-    if (index == -1) return null;
-
-    final entry = state[index];
-    final next = [...state];
-    next[index] = entry.copyWith(isActive: false);
-    state = next;
-    return entry;
-  }
-}
-
-final moderatorInviteCodeProvider =
-    StateNotifierProvider<ModeratorInviteCodeController, List<ModeratorInviteCode>>((ref) {
-  return ModeratorInviteCodeController();
-});
-
 class SessionController extends StateNotifier<SessionState> {
-  SessionController(this._read) : super(const SessionState());
-
-  final Ref _read;
+  SessionController() : super(const SessionState());
 
   void signInUser({required String displayName}) {
     state = state.copyWith(role: AppRole.user, displayName: displayName, statusMessage: null);
@@ -146,21 +65,33 @@ class SessionController extends StateNotifier<SessionState> {
     );
   }
 
-  bool signInModeratorWithCode(String code) {
-    final entry = _read.read(moderatorInviteCodeProvider.notifier).consumeCode(code.trim());
-    if (entry == null) {
-      state = state.copyWith(statusMessage: 'Invalid or expired moderator code.');
-      return false;
-    }
+  void setUserSession({
+    required String displayName,
+    required CommunityIdentity identity,
+    required String sessionToken,
+  }) {
+    state = state.copyWith(
+      role: AppRole.user,
+      displayName: displayName,
+      identity: identity,
+      sessionToken: sessionToken,
+      statusMessage: null,
+    );
+  }
 
+  void setModeratorSession({
+    required String sessionToken,
+    required String gatheringPlace,
+    required String moderatorRole,
+  }) {
     state = state.copyWith(
       role: AppRole.moderator,
       displayName: 'Moderator',
-      moderatorGatheringPlace: entry.gatheringPlace,
-      moderatorRole: entry.role,
+      moderatorGatheringPlace: gatheringPlace,
+      moderatorRole: moderatorRole,
+      sessionToken: sessionToken,
       statusMessage: null,
     );
-    return true;
   }
 
   bool signInAdmin(String secret) {
@@ -199,5 +130,5 @@ class SessionController extends StateNotifier<SessionState> {
 }
 
 final sessionControllerProvider = StateNotifierProvider<SessionController, SessionState>((ref) {
-  return SessionController(ref);
+  return SessionController();
 });

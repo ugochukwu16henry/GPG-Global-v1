@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
+import { sessionService } from './sessionService.js';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -68,5 +69,37 @@ export const authService = {
     });
 
     return { user };
+  },
+
+  async verifyPhoneOtpSession({
+    phone,
+    otpCode,
+    displayName,
+    isMember,
+  }: {
+    phone: string;
+    otpCode: string;
+    displayName?: string;
+    isMember?: boolean;
+  }) {
+    const { user } = await this.verifyPhoneOtp(phone, otpCode);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        displayName: displayName && displayName.trim().length > 0 ? displayName.trim() : user.displayName,
+        isMember: isMember ?? user.isMember,
+      },
+    });
+
+    const session = sessionService.issueSessionToken({
+      userId: updatedUser.id,
+      role: 'user',
+    });
+
+    return {
+      user: updatedUser,
+      session,
+    };
   }
 };

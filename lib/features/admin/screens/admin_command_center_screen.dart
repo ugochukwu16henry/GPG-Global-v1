@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../auth/providers/session_provider.dart';
+import '../../backend/providers/backend_live_providers.dart';
 import '../providers/admin_command_center_provider.dart';
 
 class AdminCommandCenterScreen extends ConsumerWidget {
@@ -44,7 +44,7 @@ class AdminCommandCenterScreen extends ConsumerWidget {
     final centerHealth = ref.watch(centerHealthProvider);
     final adminRoles = ref.watch(localAdminRolesProvider);
     final logs = ref.watch(immutableTransparencyLogProvider);
-    final moderatorCodes = ref.watch(moderatorInviteCodeProvider);
+    final moderatorCodes = ref.watch(moderatorInviteCodeBackendProvider);
 
     final scheme = Theme.of(context).colorScheme;
 
@@ -685,31 +685,45 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                         runSpacing: 8,
                         children: [
                           FilledButton.tonal(
+                            onPressed: moderatorCodes.isLoading
+                                ? null
+                                : () => ref.read(moderatorInviteCodeBackendProvider.notifier).refresh(),
+                            child: const Text('Refresh Codes'),
+                          ),
+                          FilledButton.tonal(
                             onPressed: () {
-                              ref.read(moderatorInviteCodeProvider.notifier).generateCode(
+                              ref.read(moderatorInviteCodeBackendProvider.notifier).generate(
                                     gatheringPlace: 'Lagos Island Gathering Place',
-                                    role: 'Service Moderator',
+                                    roleLabel: 'Service Moderator',
                                   );
                             },
                             child: const Text('Generate Lagos Service Mod Code'),
                           ),
                           FilledButton.tonal(
                             onPressed: () {
-                              ref.read(moderatorInviteCodeProvider.notifier).generateCode(
+                              ref.read(moderatorInviteCodeBackendProvider.notifier).generate(
                                     gatheringPlace: 'Provo South Gathering Place',
-                                    role: 'Temple Prep Moderator',
+                                    roleLabel: 'Temple Prep Moderator',
                                   );
                             },
                             child: const Text('Generate Provo Temple Prep Code'),
                           ),
                         ],
                       ),
+                      if (moderatorCodes.isLoading) ...[
+                        const SizedBox(height: 8),
+                        const LinearProgressIndicator(),
+                      ],
+                      if (moderatorCodes.error != null) ...[
+                        const SizedBox(height: 8),
+                        Text(moderatorCodes.error!, style: const TextStyle(color: AppColors.warmCrimson)),
+                      ],
                       const SizedBox(height: 10),
-                      ...moderatorCodes.take(8).map(
+                      ...moderatorCodes.items.take(8).map(
                         (code) => Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Text(
-                            '${code.code} · ${code.gatheringPlace} · ${code.role} · ${code.isActive ? 'Active' : 'Used'}',
+                            '${code['code']} · ${code['gatheringPlace']} · ${code['roleLabel']} · ${code['isActive'] == true ? 'Active' : 'Used'}',
                             style: TextStyle(color: scheme.onSurface, fontSize: 12),
                           ),
                         ),
