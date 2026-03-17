@@ -8,8 +8,14 @@ class BackendRealtimeService {
   final String baseUrl;
   io.Socket? _socket;
   final _redFlagController = StreamController<String>.broadcast();
+  final _typingController = StreamController<String>.broadcast();
+  final _readReceiptController = StreamController<String>.broadcast();
+  final _actionRequiredController = StreamController<String>.broadcast();
 
   Stream<String> get redFlags => _redFlagController.stream;
+  Stream<String> get typingIndicators => _typingController.stream;
+  Stream<String> get readReceipts => _readReceiptController.stream;
+  Stream<String> get actionRequired => _actionRequiredController.stream;
 
   void connect() {
     _socket?.dispose();
@@ -29,6 +35,29 @@ class BackendRealtimeService {
       }
     });
 
+    _socket?.on('chat:typing', (payload) {
+      if (payload is Map) {
+        final userId = payload['userId']?.toString() ?? 'unknown';
+        final isTyping = payload['isTyping'] == true;
+        _typingController.add('$userId ${isTyping ? 'is typing...' : 'stopped typing'}');
+      }
+    });
+
+    _socket?.on('chat:read', (payload) {
+      if (payload is Map) {
+        final userId = payload['userId']?.toString() ?? 'unknown';
+        final messageId = payload['messageId']?.toString() ?? '';
+        _readReceiptController.add('$userId read message $messageId');
+      }
+    });
+
+    _socket?.on('admin:action-required', (payload) {
+      if (payload is Map) {
+        final roomId = payload['roomId']?.toString() ?? 'unknown-room';
+        _actionRequiredController.add('Action required for room $roomId');
+      }
+    });
+
     _socket?.connect();
   }
 
@@ -36,5 +65,28 @@ class BackendRealtimeService {
     _socket?.dispose();
     _socket = null;
     _redFlagController.close();
+    _typingController.close();
+    _readReceiptController.close();
+    _actionRequiredController.close();
+  }
+
+  void joinRoom(String roomId) {
+    _socket?.emit('room:join', roomId);
+  }
+
+  void sendTyping({required String roomId, required String userId, required bool isTyping}) {
+    _socket?.emit('chat:typing', {
+      'roomId': roomId,
+      'userId': userId,
+      'isTyping': isTyping,
+    });
+  }
+
+  void markRead({required String roomId, required String messageId, required String userId}) {
+    _socket?.emit('chat:read', {
+      'roomId': roomId,
+      'messageId': messageId,
+      'userId': userId,
+    });
   }
 }

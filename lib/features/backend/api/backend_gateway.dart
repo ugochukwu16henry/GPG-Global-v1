@@ -658,4 +658,333 @@ class BackendGateway {
     final items = data['blockedAccounts'] as List<dynamic>;
     return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
   }
+
+  Future<List<Map<String, dynamic>>> nearbyGatheringPlaces({
+    required String userId,
+    required double latitude,
+    required double longitude,
+    double radiusMiles = 20,
+  }) async {
+    final data = await _query(
+      '''
+      query NearbyGatheringPlaces(
+        ${r'$'}userId: ID!,
+        ${r'$'}latitude: Float!,
+        ${r'$'}longitude: Float!,
+        ${r'$'}radiusMiles: Float
+      ) {
+        nearbyGatheringPlaces(
+          userId: ${r'$'}userId,
+          latitude: ${r'$'}latitude,
+          longitude: ${r'$'}longitude,
+          radiusMiles: ${r'$'}radiusMiles
+        ) {
+          id
+          name
+          country
+          stateOrCity
+          lga
+          distanceMiles
+          groups {
+            id
+            name
+            level
+            category
+            memberCount
+            isPrivate
+          }
+        }
+      }
+      ''',
+      variables: {
+        'userId': userId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radiusMiles': radiusMiles,
+      },
+    );
+
+    final items = data['nearbyGatheringPlaces'] as List<dynamic>;
+    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+  }
+
+  Future<void> createLocalGatheringPlace({
+    required String name,
+    required String country,
+    required String stateOrCity,
+    String? lga,
+    required double latitude,
+    required double longitude,
+  }) async {
+    await _query(
+      '''
+      mutation CreateLocalGatheringPlace(
+        ${r'$'}name: String!,
+        ${r'$'}country: String!,
+        ${r'$'}stateOrCity: String!,
+        ${r'$'}lga: String,
+        ${r'$'}latitude: Float!,
+        ${r'$'}longitude: Float!
+      ) {
+        createLocalGatheringPlace(
+          name: ${r'$'}name,
+          country: ${r'$'}country,
+          stateOrCity: ${r'$'}stateOrCity,
+          lga: ${r'$'}lga,
+          latitude: ${r'$'}latitude,
+          longitude: ${r'$'}longitude
+        )
+      }
+      ''',
+      variables: {
+        'name': name,
+        'country': country,
+        'stateOrCity': stateOrCity,
+        'lga': lga,
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
+  }
+
+  Future<void> createSubGroup({
+    required String gatheringPlaceId,
+    required String name,
+    required String category,
+    required String adminUserId,
+    bool isPrivate = false,
+  }) async {
+    await _query(
+      '''
+      mutation CreateSubGroup(
+        ${r'$'}gatheringPlaceId: ID!,
+        ${r'$'}name: String!,
+        ${r'$'}category: GroupCategory!,
+        ${r'$'}adminUserId: ID!,
+        ${r'$'}isPrivate: Boolean
+      ) {
+        createSubGroup(
+          gatheringPlaceId: ${r'$'}gatheringPlaceId,
+          name: ${r'$'}name,
+          category: ${r'$'}category,
+          adminUserId: ${r'$'}adminUserId,
+          isPrivate: ${r'$'}isPrivate
+        )
+      }
+      ''',
+      variables: {
+        'gatheringPlaceId': gatheringPlaceId,
+        'name': name,
+        'category': category,
+        'adminUserId': adminUserId,
+        'isPrivate': isPrivate,
+      },
+    );
+  }
+
+  Future<void> joinGatheringGroup({
+    required String userId,
+    required String groupId,
+    required String role,
+  }) async {
+    await _query(
+      '''
+      mutation JoinGatheringGroup(
+        ${r'$'}userId: ID!,
+        ${r'$'}groupId: ID!,
+        ${r'$'}role: GroupMembershipRole
+      ) {
+        joinGatheringGroup(userId: ${r'$'}userId, groupId: ${r'$'}groupId, role: ${r'$'}role)
+      }
+      ''',
+      variables: {
+        'userId': userId,
+        'groupId': groupId,
+        'role': role,
+      },
+    );
+  }
+
+  Future<String> checkInGatheringPlace({required String userId, required String gatheringPlaceId}) async {
+    final data = await _query(
+      '''
+      mutation CheckInGatheringPlace(${r'$'}userId: ID!, ${r'$'}gatheringPlaceId: ID!) {
+        checkInGatheringPlace(userId: ${r'$'}userId, gatheringPlaceId: ${r'$'}gatheringPlaceId) {
+          message
+        }
+      }
+      ''',
+      variables: {'userId': userId, 'gatheringPlaceId': gatheringPlaceId},
+    );
+
+    final result = data['checkInGatheringPlace'] as Map<String, dynamic>;
+    return result['message'] as String;
+  }
+
+  Future<void> createSafetyMetadataFlag({
+    required String chatId,
+    required String flaggedUserId,
+    required int riskScore,
+    required String conductCategory,
+    required String summary,
+  }) async {
+    await _query(
+      '''
+      mutation CreateSafetyMetadataFlag(
+        ${r'$'}chatId: String!,
+        ${r'$'}flaggedUserId: ID!,
+        ${r'$'}riskScore: Int!,
+        ${r'$'}conductCategory: FaithConductCategory!,
+        ${r'$'}summary: String!
+      ) {
+        createSafetyMetadataFlag(
+          chatId: ${r'$'}chatId,
+          flaggedUserId: ${r'$'}flaggedUserId,
+          riskScore: ${r'$'}riskScore,
+          conductCategory: ${r'$'}conductCategory,
+          summary: ${r'$'}summary
+        )
+      }
+      ''',
+      variables: {
+        'chatId': chatId,
+        'flaggedUserId': flaggedUserId,
+        'riskScore': riskScore,
+        'conductCategory': conductCategory,
+        'summary': summary,
+      },
+    );
+  }
+
+  Future<void> createAiBreakGlassBundle({
+    required String chatId,
+    required String reportedUserId,
+    required String conductCategory,
+    required int riskScore,
+    required String localAiSummary,
+    required List<String> evidenceMessages,
+  }) async {
+    await _query(
+      '''
+      mutation CreateAiBreakGlassBundle(
+        ${r'$'}chatId: String!,
+        ${r'$'}reportedUserId: ID!,
+        ${r'$'}conductCategory: FaithConductCategory!,
+        ${r'$'}riskScore: Int!,
+        ${r'$'}localAiSummary: String,
+        ${r'$'}evidenceMessages: [String!]!
+      ) {
+        createAiBreakGlassBundle(
+          chatId: ${r'$'}chatId,
+          reportedUserId: ${r'$'}reportedUserId,
+          conductCategory: ${r'$'}conductCategory,
+          riskScore: ${r'$'}riskScore,
+          localAiSummary: ${r'$'}localAiSummary,
+          evidenceMessages: ${r'$'}evidenceMessages
+        )
+      }
+      ''',
+      variables: {
+        'chatId': chatId,
+        'reportedUserId': reportedUserId,
+        'conductCategory': conductCategory,
+        'riskScore': riskScore,
+        'localAiSummary': localAiSummary,
+        'evidenceMessages': evidenceMessages,
+      },
+    );
+  }
+
+  Future<void> createUserReportBundle({
+    required String chatId,
+    required String reporterUserId,
+    required String reportedUserId,
+    required String conductCategory,
+    required String messageFrankingProof,
+    required List<String> evidenceMessages,
+  }) async {
+    await _query(
+      '''
+      mutation CreateUserReportBundle(
+        ${r'$'}chatId: String!,
+        ${r'$'}reporterUserId: ID!,
+        ${r'$'}reportedUserId: ID!,
+        ${r'$'}conductCategory: FaithConductCategory!,
+        ${r'$'}messageFrankingProof: String!,
+        ${r'$'}evidenceMessages: [String!]!
+      ) {
+        createUserReportBundle(
+          chatId: ${r'$'}chatId,
+          reporterUserId: ${r'$'}reporterUserId,
+          reportedUserId: ${r'$'}reportedUserId,
+          conductCategory: ${r'$'}conductCategory,
+          messageFrankingProof: ${r'$'}messageFrankingProof,
+          evidenceMessages: ${r'$'}evidenceMessages
+        )
+      }
+      ''',
+      variables: {
+        'chatId': chatId,
+        'reporterUserId': reporterUserId,
+        'reportedUserId': reportedUserId,
+        'conductCategory': conductCategory,
+        'messageFrankingProof': messageFrankingProof,
+        'evidenceMessages': evidenceMessages,
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> breakGlassBundles({int limit = 20}) async {
+    final data = await _query(
+      '''
+      query BreakGlassBundles(${r'$'}limit: Int) {
+        breakGlassBundles(limit: ${r'$'}limit) {
+          id
+          trigger
+          chatId
+          reporterUserId
+          reportedUserId
+          conductCategory
+          riskScore
+          localAiSummary
+          messageFrankingProof
+          resolution
+          createdAt
+          evidenceMessages {
+            id
+            senderUserId
+            body
+            createdAt
+          }
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+    final items = data['breakGlassBundles'] as List<dynamic>;
+    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+  }
+
+  Future<void> resolveBreakGlassBundle({
+    required String bundleId,
+    required String adminUserId,
+    required String action,
+  }) async {
+    await _query(
+      '''
+      mutation ResolveBreakGlassBundle(
+        ${r'$'}bundleId: ID!,
+        ${r'$'}adminUserId: ID!,
+        ${r'$'}action: BreakGlassResolutionAction!
+      ) {
+        resolveBreakGlassBundle(bundleId: ${r'$'}bundleId, adminUserId: ${r'$'}adminUserId, action: ${r'$'}action)
+      }
+      ''',
+      variables: {
+        'bundleId': bundleId,
+        'adminUserId': adminUserId,
+        'action': action,
+      },
+    );
+  }
 }

@@ -32,11 +32,13 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final messageController = TextEditingController();
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
     final previewMessages = ref.watch(missionPeerChatPreviewProvider);
     final selectedCategory = ref.watch(selectedMarketplaceCategoryProvider);
     final backendState = ref.watch(backendDemoControllerProvider);
+    final guardian = ref.watch(silentGuardianControllerProvider);
     final realtimeRedFlag = ref.watch(backendRedFlagStreamProvider);
     const sonicIdentity = SonicIdentityService();
 
@@ -283,6 +285,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
+              const SizedBox(height: 8),
+              _chatGuardianComposer(context, ref, messageController, guardian),
             ],
           ),
         ),
@@ -518,6 +522,99 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _chatGuardianComposer(
+    BuildContext context,
+    WidgetRef ref,
+    TextEditingController messageController,
+    SilentGuardianState guardian,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.primaryNavy.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Silent Guardian (On-Device AI)',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: messageController,
+            minLines: 1,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+              hintText: 'Type a message for local scan...'
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonal(
+                onPressed: guardian.isLoading
+                    ? null
+                    : () async {
+                        final text = messageController.text.trim();
+                        if (text.isEmpty) return;
+                        final sent = await ref.read(silentGuardianControllerProvider.notifier).guardAndSend(
+                              roomId: 'global-ysa-room',
+                              body: text,
+                              userConfirmedAfterNudge: true,
+                            );
+                        if (sent) {
+                          messageController.clear();
+                        }
+                      },
+                child: const Text('Send with Guardian'),
+              ),
+              FilledButton.tonal(
+                onPressed: guardian.isLoading
+                    ? null
+                    : () async {
+                        final text = messageController.text.trim();
+                        if (text.isEmpty) return;
+                        await ref.read(silentGuardianControllerProvider.notifier).reportWithFranking(
+                              roomId: 'global-ysa-room',
+                              reportedUserId: 'u1003',
+                              conductCategory: 'DISRESPECTFUL_LANGUAGE',
+                              evidenceMessage: text,
+                            );
+                      },
+                child: const Text('Report w/ Franking'),
+              ),
+            ],
+          ),
+          if (guardian.lastNudge != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              guardian.lastNudge!,
+              style: TextStyle(
+                fontSize: 10,
+                color: (guardian.lastRiskScore ?? 0) >= 70
+                    ? AppColors.warmCrimson
+                    : AppColors.stewardshipGreen,
+              ),
+            ),
+          ],
+          if (guardian.error != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              guardian.error!,
+              style: const TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

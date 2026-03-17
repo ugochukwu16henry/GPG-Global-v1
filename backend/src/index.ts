@@ -10,6 +10,7 @@ import { webhooksRouter } from './routes/webhooks.js';
 import { createSocketServer } from './realtime/socketServer.js';
 import { prisma } from './lib/prisma.js';
 import { neo4jDriver } from './lib/neo4j.js';
+import { gatheringService } from './services/gatheringService.js';
 
 const app = express();
 
@@ -46,6 +47,8 @@ app.use(
 
 const httpServer = createServer(app);
 createSocketServer(httpServer);
+
+await gatheringService.ensureGlobalCommunity();
 
 httpServer.listen(env.PORT, () => {
   console.log(`GPG Backend listening on :${env.PORT}`);

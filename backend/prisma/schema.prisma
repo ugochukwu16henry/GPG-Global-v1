@@ -74,6 +74,47 @@ enum ReportReasonCode {
   OTHER
 }
 
+enum GatheringLevel {
+  GLOBAL
+  LOCAL
+  SUB_GROUP
+}
+
+enum GroupMembershipRole {
+  MEMBER
+  FRIEND
+  SEEKER
+  MODERATOR
+  LEADER
+}
+
+enum GroupCategory {
+  GENERAL
+  SELF_RELIANCE
+  TEMPLE_PREP
+  SOCIAL
+}
+
+enum FaithConductCategory {
+  DISRESPECTFUL_LANGUAGE
+  IMMODEST_INAPPROPRIATE_CONTENT
+  DISHONEST_CONDUCT
+  UNWHOLESOME_BEHAVIOR
+}
+
+enum BreakGlassTrigger {
+  HIGH_RISK_AI_ALERT
+  USER_REPORT
+}
+
+enum BreakGlassResolutionAction {
+  PENDING
+  DISMISSED
+  WARNING_SENT
+  SUSPENDED_7_DAYS
+  PERMANENT_BAN
+}
+
 model User {
   id                 String               @id @default(cuid())
   phone              String               @unique
@@ -123,6 +164,11 @@ model User {
   mutedByUsers       MuteRelation[] @relation("Muted")
   reportsSubmitted   UserReport[] @relation("Reporter")
   reportsReceived    UserReport[] @relation("Reported")
+  groupMemberships   GatheringGroupMembership[]
+  checkIns           GatheringCheckIn[]
+  readReceipts       GroupMessageReadReceipt[]
+  safetyFlags        SafetyMetadataFlag[]
+  breakGlassBundlesReported BreakGlassReportBundle[] @relation("BundleReporter")
 }
 
 model Mission {
@@ -217,10 +263,13 @@ model ChatMessage {
   senderUserId   String
   roomId         String
   body           String
+  threadId       String?
+  isHiddenByAi   Boolean @default(false)
   createdAt      DateTime @default(now())
 
   senderUser     User @relation(fields: [senderUserId], references: [id])
   moderationFlag ModerationFlag?
+  readReceipts   GroupMessageReadReceipt[]
 
   @@index([roomId, createdAt])
 }
@@ -412,4 +461,124 @@ model HighBlockAlert {
 
   @@unique([targetUserId, flaggedAt])
   @@index([targetUserId, reviewed])
+}
+
+model SafetyMetadataFlag {
+  id                 String @id @default(cuid())
+  chatId             String
+  flaggedUserId      String
+  riskScore          Int
+  conductCategory    FaithConductCategory
+  summary            String
+  source             String @default("ON_DEVICE_LLAMA4_SCOUT")
+  createdAt          DateTime @default(now())
+
+  flaggedUser        User @relation(fields: [flaggedUserId], references: [id])
+
+  @@index([chatId, createdAt])
+  @@index([riskScore])
+}
+
+model BreakGlassReportBundle {
+  id                 String @id @default(cuid())
+  trigger            BreakGlassTrigger
+  chatId             String
+  reporterUserId     String?
+  reportedUserId     String
+  conductCategory    FaithConductCategory
+  riskScore          Int?
+  messageFrankingProof String?
+  localAiSummary     String?
+  resolution         BreakGlassResolutionAction @default(PENDING)
+  resolvedByAdminId  String?
+  resolvedAt         DateTime?
+  createdAt          DateTime @default(now())
+
+  reporterUser       User? @relation("BundleReporter", fields: [reporterUserId], references: [id])
+  evidenceMessages   BreakGlassEvidenceMessage[]
+
+  @@index([chatId, createdAt])
+  @@index([resolution, createdAt])
+}
+
+model BreakGlassEvidenceMessage {
+  id                 String @id @default(cuid())
+  bundleId           String
+  senderUserId       String
+  body               String
+  createdAt          DateTime @default(now())
+
+  bundle             BreakGlassReportBundle @relation(fields: [bundleId], references: [id])
+
+  @@index([bundleId, createdAt])
+}
+
+model GatheringPlace {
+  id             String @id @default(cuid())
+  name           String
+  country        String
+  stateOrCity    String
+  lga            String?
+  latitude       Float
+  longitude      Float
+  geohash        String?
+  isGlobal       Boolean @default(false)
+  createdAt      DateTime @default(now())
+
+  groups         GatheringGroup[]
+  checkIns       GatheringCheckIn[]
+}
+
+model GatheringGroup {
+  id               String @id @default(cuid())
+  gatheringPlaceId String
+  name             String
+  level            GatheringLevel @default(LOCAL)
+  category         GroupCategory @default(GENERAL)
+  parentGroupId    String?
+  adminUserId      String?
+  isPrivate        Boolean @default(false)
+  createdAt        DateTime @default(now())
+
+  gatheringPlace   GatheringPlace @relation(fields: [gatheringPlaceId], references: [id])
+  memberships      GatheringGroupMembership[]
+
+  @@index([gatheringPlaceId, level])
+}
+
+model GatheringGroupMembership {
+  id            String @id @default(cuid())
+  userId        String
+  groupId       String
+  role          GroupMembershipRole @default(MEMBER)
+  joinedAt      DateTime @default(now())
+
+  user          User @relation(fields: [userId], references: [id])
+  group         GatheringGroup @relation(fields: [groupId], references: [id])
+
+  @@unique([userId, groupId])
+}
+
+model GatheringCheckIn {
+  id               String @id @default(cuid())
+  userId           String
+  gatheringPlaceId String
+  checkedInAt      DateTime @default(now())
+
+  user             User @relation(fields: [userId], references: [id])
+  gatheringPlace   GatheringPlace @relation(fields: [gatheringPlaceId], references: [id])
+
+  @@index([userId, checkedInAt])
+}
+
+model GroupMessageReadReceipt {
+  id            String @id @default(cuid())
+  messageId     String
+  userId        String
+  readAt        DateTime @default(now())
+
+  message       ChatMessage @relation(fields: [messageId], references: [id])
+  user          User @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
 }

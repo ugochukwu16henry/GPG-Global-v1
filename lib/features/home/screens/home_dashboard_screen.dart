@@ -9,6 +9,7 @@ import '../widgets/gathering_feed.dart';
 import '../widgets/pathway_progress_tracker.dart';
 import '../widgets/profile_card.dart';
 import '../widgets/live_events_and_marketplace_demo.dart';
+import '../widgets/gathering_place_hierarchy_panel.dart';
 import '../widgets/talents_near_you_panel.dart';
 
 /// Home Dashboard with Bento Grid: Profile (top-left), Pathway Progress (top-right),
@@ -203,6 +204,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
           const SizedBox(height: 16),
           const LiveEventsAndMarketplaceDemo(),
           const SizedBox(height: 16),
+          const GatheringPlaceHierarchyPanel(),
+          const SizedBox(height: 16),
           ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: constraints.maxHeight - 220,
@@ -232,6 +235,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
             ),
             const SizedBox(height: 24),
             const LiveEventsAndMarketplaceDemo(),
+            const SizedBox(height: 24),
+            const GatheringPlaceHierarchyPanel(),
             const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,

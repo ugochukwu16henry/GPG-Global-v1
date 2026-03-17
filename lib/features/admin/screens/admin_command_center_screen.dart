@@ -29,6 +29,7 @@ class AdminCommandCenterScreen extends ConsumerWidget {
     final managedUsers = ref.watch(managedUsersProvider);
     final blacklistedPhones = ref.watch(blacklistedPhonesProvider);
     final blacklistedDevices = ref.watch(blacklistedDevicesProvider);
+    final breakGlassDesk = ref.watch(breakGlassDeskControllerProvider);
 
     final revenue = ref.watch(pendingRevenueUsdProvider);
     final revenueByCategory = ref.watch(marketplaceRevenueByCategoryProvider);
@@ -283,6 +284,102 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             '${risk['displayName']} (${risk['userId']}) · ${risk['blocksLast24h']} blocks in 24h',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Break-Glass Review Desk'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.tonal(
+                            onPressed: breakGlassDesk.isLoading
+                                ? null
+                                : () => ref.read(breakGlassDeskControllerProvider.notifier).refresh(),
+                            child: const Text('Refresh Alerts'),
+                          ),
+                        ],
+                      ),
+                      if (breakGlassDesk.isLoading) ...[
+                        const SizedBox(height: 8),
+                        const LinearProgressIndicator(),
+                      ],
+                      if (breakGlassDesk.error != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          breakGlassDesk.error!,
+                          style: const TextStyle(color: AppColors.warmCrimson),
+                        ),
+                      ],
+                      ...breakGlassDesk.bundles.map(
+                        (bundle) => Container(
+                          margin: const EdgeInsets.only(top: 10),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Chat ${bundle['chatId']} · Risk ${bundle['riskScore'] ?? '-'} · ${bundle['conductCategory']}',
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 4),
+                              Text('User History: Reports handled through prior moderation logs.'),
+                              const SizedBox(height: 6),
+                              Text('Evidence (3–5 messages):', style: TextStyle(color: scheme.onSurface)),
+                              ...((bundle['evidenceMessages'] as List<dynamic>? ?? const [])
+                                  .take(5)
+                                  .map((m) => Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text('• ${(m as Map<String, dynamic>)['body']}'),
+                                      ))
+                                  .toList()),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  FilledButton.tonal(
+                                    onPressed: () => ref
+                                        .read(breakGlassDeskControllerProvider.notifier)
+                                        .resolve(bundleId: bundle['id'].toString(), action: 'DISMISSED'),
+                                    child: const Text('Dismiss'),
+                                  ),
+                                  FilledButton.tonal(
+                                    onPressed: () => ref
+                                        .read(breakGlassDeskControllerProvider.notifier)
+                                        .resolve(bundleId: bundle['id'].toString(), action: 'WARNING_SENT'),
+                                    child: const Text('Send Warning'),
+                                  ),
+                                  FilledButton.tonal(
+                                    onPressed: () => ref
+                                        .read(breakGlassDeskControllerProvider.notifier)
+                                        .resolve(bundleId: bundle['id'].toString(), action: 'SUSPENDED_7_DAYS'),
+                                    child: const Text('7-Day Suspension'),
+                                  ),
+                                  FilledButton.tonal(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.24),
+                                    ),
+                                    onPressed: () => ref
+                                        .read(breakGlassDeskControllerProvider.notifier)
+                                        .resolve(bundleId: bundle['id'].toString(), action: 'PERMANENT_BAN'),
+                                    child: const Text('Permanent Ban'),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),

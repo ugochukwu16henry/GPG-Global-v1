@@ -7,6 +7,8 @@ import { chatService } from '../services/chatService.js';
 import { feedService } from '../services/feedService.js';
 import { adminService } from '../services/adminService.js';
 import { boundaryService } from '../services/boundaryService.js';
+import { gatheringService } from '../services/gatheringService.js';
+import { safetyService } from '../services/safetyService.js';
 
 export const typeDefs = `
   enum PathwayStatus {
@@ -49,6 +51,41 @@ export const typeDefs = `
     SCAM
     INAPPROPRIATE_CONTENT
     OTHER
+  }
+
+  enum GatheringLevel {
+    GLOBAL
+    LOCAL
+    SUB_GROUP
+  }
+
+  enum GroupCategory {
+    GENERAL
+    SELF_RELIANCE
+    TEMPLE_PREP
+    SOCIAL
+  }
+
+  enum GroupMembershipRole {
+    MEMBER
+    FRIEND
+    SEEKER
+    MODERATOR
+    LEADER
+  }
+
+  enum FaithConductCategory {
+    DISRESPECTFUL_LANGUAGE
+    IMMODEST_INAPPROPRIATE_CONTENT
+    DISHONEST_CONDUCT
+    UNWHOLESOME_BEHAVIOR
+  }
+
+  enum BreakGlassResolutionAction {
+    DISMISSED
+    WARNING_SENT
+    SUSPENDED_7_DAYS
+    PERMANENT_BAN
   }
 
   type User {
@@ -151,6 +188,51 @@ export const typeDefs = `
     blockedAt: String!
   }
 
+  type GatheringGroupSummary {
+    id: ID!
+    name: String!
+    level: GatheringLevel!
+    category: GroupCategory!
+    memberCount: Int!
+    isPrivate: Boolean!
+  }
+
+  type GatheringPlaceSummary {
+    id: ID!
+    name: String!
+    country: String!
+    stateOrCity: String!
+    lga: String
+    distanceMiles: Float
+    groups: [GatheringGroupSummary!]!
+  }
+
+  type DigitalHandshake {
+    message: String!
+  }
+
+  type BreakGlassEvidenceMessage {
+    id: ID!
+    senderUserId: ID!
+    body: String!
+    createdAt: String!
+  }
+
+  type BreakGlassReportBundle {
+    id: ID!
+    trigger: String!
+    chatId: String!
+    reporterUserId: ID
+    reportedUserId: ID!
+    conductCategory: FaithConductCategory!
+    riskScore: Int
+    localAiSummary: String
+    messageFrankingProof: String
+    resolution: String!
+    createdAt: String!
+    evidenceMessages: [BreakGlassEvidenceMessage!]!
+  }
+
   type AdminActionLog {
     id: ID!
     adminUserId: ID!
@@ -194,6 +276,9 @@ export const typeDefs = `
     ): [CommunitySearchUser!]!
     feed(limit: Int = 20): [FeedPost!]!
     blockedAccounts(userId: ID!): [BlockedAccount!]!
+    nearbyGatheringPlaces(userId: ID!, latitude: Float!, longitude: Float!, radiusMiles: Float = 20): [GatheringPlaceSummary!]!
+    userGatheringGroups(userId: ID!): [GatheringGroupSummary!]!
+    breakGlassBundles(limit: Int = 20): [BreakGlassReportBundle!]!
     adminActionLogs(limit: Int = 50): [AdminActionLog!]!
     readSensitiveField(ownerUserId: ID!, field: SensitiveField!): String
   }
@@ -253,6 +338,55 @@ export const typeDefs = `
     muteUser(muterId: ID!, mutedId: ID!): Boolean!
     unmuteUser(muterId: ID!, mutedId: ID!): Boolean!
     reportUser(reporterId: ID!, reportedId: ID!, reasonCode: ReportReasonCode!, detail: String): Boolean!
+
+    createLocalGatheringPlace(
+      name: String!
+      country: String!
+      stateOrCity: String!
+      lga: String
+      latitude: Float!
+      longitude: Float!
+    ): Boolean!
+    createSubGroup(
+      gatheringPlaceId: ID!
+      name: String!
+      category: GroupCategory!
+      adminUserId: ID!
+      isPrivate: Boolean
+      parentGroupId: ID
+    ): Boolean!
+    joinGatheringGroup(userId: ID!, groupId: ID!, role: GroupMembershipRole): Boolean!
+    checkInGatheringPlace(userId: ID!, gatheringPlaceId: ID!): DigitalHandshake!
+    markChatRead(messageId: ID!, userId: ID!): Boolean!
+    reportChatMessage(messageId: ID!, reporterId: ID!, localAdminUserId: ID): Boolean!
+    createSafetyMetadataFlag(
+      chatId: String!
+      flaggedUserId: ID!
+      riskScore: Int!
+      conductCategory: FaithConductCategory!
+      summary: String!
+    ): Boolean!
+    createAiBreakGlassBundle(
+      chatId: String!
+      reportedUserId: ID!
+      conductCategory: FaithConductCategory!
+      riskScore: Int!
+      localAiSummary: String
+      evidenceMessages: [String!]!
+    ): Boolean!
+    createUserReportBundle(
+      chatId: String!
+      reporterUserId: ID!
+      reportedUserId: ID!
+      conductCategory: FaithConductCategory!
+      messageFrankingProof: String!
+      evidenceMessages: [String!]!
+    ): Boolean!
+    resolveBreakGlassBundle(
+      bundleId: ID!
+      adminUserId: ID!
+      action: BreakGlassResolutionAction!
+    ): Boolean!
 
     sendChatMessage(senderUserId: ID!, roomId: String!, body: String!): ChatResult!
   }
@@ -363,6 +497,42 @@ export const resolvers = {
         profilePictureUrl: row.blocked.profilePictureUrl,
         blockedAt: row.createdAt.toISOString(),
       }));
+    },
+    nearbyGatheringPlaces: async (
+      _: unknown,
+      args: { userId: string; latitude: number; longitude: number; radiusMiles?: number }
+    ) => {
+      const rows = await gatheringService.suggestNearbyGatheringPlaces(args);
+      return rows.map((place) => ({
+        id: place.id,
+        name: place.name,
+        country: place.country,
+        stateOrCity: place.stateOrCity,
+        lga: place.lga,
+        distanceMiles: place.distanceMiles,
+        groups: place.groups.map((group) => ({
+          id: group.id,
+          name: group.name,
+          level: group.level,
+          category: group.category,
+          memberCount: group.memberships.length,
+          isPrivate: group.isPrivate,
+        })),
+      }));
+    },
+    userGatheringGroups: async (_: unknown, args: { userId: string }) => {
+      const rows = await gatheringService.groupsForUser(args.userId);
+      return rows.map((row) => ({
+        id: row.group.id,
+        name: row.group.name,
+        level: row.group.level,
+        category: row.group.category,
+        memberCount: row.group.memberships.length,
+        isPrivate: row.group.isPrivate,
+      }));
+    },
+    breakGlassBundles: (_: unknown, args: { limit?: number }) => {
+      return safetyService.listBundles(args.limit ?? 20);
     },
     adminActionLogs: (_: unknown, args: { limit?: number }) => {
       return adminService.recentLogs(args.limit ?? 50);
@@ -595,6 +765,147 @@ export const resolvers = {
       }
     ) => {
       await boundaryService.reportUser(args);
+      return true;
+    },
+    createLocalGatheringPlace: async (
+      _: unknown,
+      args: {
+        name: string;
+        country: string;
+        stateOrCity: string;
+        lga?: string;
+        latitude: number;
+        longitude: number;
+      }
+    ) => {
+      await gatheringService.upsertLocalGatheringPlace(args);
+      await gatheringService.ensureGlobalCommunity();
+      return true;
+    },
+    createSubGroup: async (
+      _: unknown,
+      args: {
+        gatheringPlaceId: string;
+        name: string;
+        category: 'GENERAL' | 'SELF_RELIANCE' | 'TEMPLE_PREP' | 'SOCIAL';
+        adminUserId: string;
+        isPrivate?: boolean;
+        parentGroupId?: string;
+      }
+    ) => {
+      await gatheringService.createSubGroup(args);
+      return true;
+    },
+    joinGatheringGroup: async (
+      _: unknown,
+      args: {
+        userId: string;
+        groupId: string;
+        role?: 'MEMBER' | 'FRIEND' | 'SEEKER' | 'MODERATOR' | 'LEADER';
+      }
+    ) => {
+      await gatheringService.joinGroup(args);
+      return true;
+    },
+    checkInGatheringPlace: async (
+      _: unknown,
+      args: { userId: string; gatheringPlaceId: string }
+    ) => {
+      return gatheringService.checkInToPlace(args);
+    },
+    markChatRead: async (_: unknown, args: { messageId: string; userId: string }) => {
+      await chatService.markRead(args.messageId, args.userId);
+      return true;
+    },
+    reportChatMessage: async (
+      _: unknown,
+      args: { messageId: string; reporterId: string; localAdminUserId?: string }
+    ) => {
+      await chatService.reportMessage(args);
+      return true;
+    },
+    createSafetyMetadataFlag: async (
+      _: unknown,
+      args: {
+        chatId: string;
+        flaggedUserId: string;
+        riskScore: number;
+        conductCategory:
+          | 'DISRESPECTFUL_LANGUAGE'
+          | 'IMMODEST_INAPPROPRIATE_CONTENT'
+          | 'DISHONEST_CONDUCT'
+          | 'UNWHOLESOME_BEHAVIOR';
+        summary: string;
+      }
+    ) => {
+      await safetyService.createMetadataFlag(args);
+      return true;
+    },
+    createAiBreakGlassBundle: async (
+      _: unknown,
+      args: {
+        chatId: string;
+        reportedUserId: string;
+        conductCategory:
+          | 'DISRESPECTFUL_LANGUAGE'
+          | 'IMMODEST_INAPPROPRIATE_CONTENT'
+          | 'DISHONEST_CONDUCT'
+          | 'UNWHOLESOME_BEHAVIOR';
+        riskScore: number;
+        localAiSummary?: string;
+        evidenceMessages: string[];
+      }
+    ) => {
+      await safetyService.createAiBreakGlassBundle({
+        chatId: args.chatId,
+        reportedUserId: args.reportedUserId,
+        conductCategory: args.conductCategory,
+        riskScore: args.riskScore,
+        localAiSummary: args.localAiSummary,
+        evidenceMessages: args.evidenceMessages.map((body) => ({
+          senderUserId: args.reportedUserId,
+          body,
+        })),
+      });
+      return true;
+    },
+    createUserReportBundle: async (
+      _: unknown,
+      args: {
+        chatId: string;
+        reporterUserId: string;
+        reportedUserId: string;
+        conductCategory:
+          | 'DISRESPECTFUL_LANGUAGE'
+          | 'IMMODEST_INAPPROPRIATE_CONTENT'
+          | 'DISHONEST_CONDUCT'
+          | 'UNWHOLESOME_BEHAVIOR';
+        messageFrankingProof: string;
+        evidenceMessages: string[];
+      }
+    ) => {
+      await safetyService.createUserReportBundle({
+        chatId: args.chatId,
+        reporterUserId: args.reporterUserId,
+        reportedUserId: args.reportedUserId,
+        conductCategory: args.conductCategory,
+        messageFrankingProof: args.messageFrankingProof,
+        evidenceMessages: args.evidenceMessages.map((body) => ({
+          senderUserId: args.reportedUserId,
+          body,
+        })),
+      });
+      return true;
+    },
+    resolveBreakGlassBundle: async (
+      _: unknown,
+      args: {
+        bundleId: string;
+        adminUserId: string;
+        action: 'DISMISSED' | 'WARNING_SENT' | 'SUSPENDED_7_DAYS' | 'PERMANENT_BAN';
+      }
+    ) => {
+      await safetyService.resolveBundle(args);
       return true;
     },
     sendChatMessage: async (_: unknown, args: { senderUserId: string; roomId: string; body: string }) => {
