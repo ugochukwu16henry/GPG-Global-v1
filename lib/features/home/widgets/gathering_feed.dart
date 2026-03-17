@@ -12,7 +12,6 @@ class GatheringFeed extends ConsumerWidget {
     final items = ref.watch(gatheringFeedProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -25,14 +24,27 @@ class GatheringFeed extends ConsumerWidget {
             ),
           ),
         ),
-        Flexible(
-          child: ListView.separated(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 100),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              return VideoFeedCard(item: items[index]);
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final maxCardWidth = constraints.maxWidth > 920
+                  ? 920.0
+                  : constraints.maxWidth;
+
+              return ListView.separated(
+                padding: const EdgeInsets.only(bottom: 24),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxCardWidth),
+                      child: VideoFeedCard(item: items[index]),
+                    ),
+                  );
+                },
+              );
             },
           ),
         ),

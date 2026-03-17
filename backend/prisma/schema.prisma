@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PathwayStatus {
+  CONNECT
+  DEGREE
+  ALUMNI
+}
+
+enum ProfessionalStatus {
+  DRAFT
+  LIVE_PROFESSIONAL
+  MERIT_GRANTED
+}
+
+enum SensitiveField {
+  GENOTYPE
+  BLOOD_GROUP
+}
+
+enum ChatViolationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  phone              String               @unique
+  displayName        String
+  isMember           Boolean              @default(false)
+  missionId          String?
+  mission            Mission?             @relation(fields: [missionId], references: [id])
+  pathwayStatus      PathwayStatus        @default(CONNECT)
+  lga                String?
+  state              String?
+  genotypeCiphertext String?
+  bloodGroupCiphertext String?
+  professionalStatus ProfessionalStatus   @default(DRAFT)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  privacyGrantsOwned PrivacyGrant[]       @relation("OwnerGrants")
+  privacyGrantsReceived PrivacyGrant[]    @relation("ViewerGrants")
+  paymentEvents      PaymentEvent[]
+  chatMessages       ChatMessage[]
+  authOtps           AuthOtp[]
+}
+
+model Mission {
+  id            String @id @default(cuid())
+  missionCode   String @unique
+  missionName   String @unique
+  country       String
+  city          String?
+  region        String?
+  createdAt     DateTime @default(now())
+
+  users         User[]
+}
+
+model AuthOtp {
+  id            String @id @default(cuid())
+  phone         String
+  otpCodeHash   String
+  expiresAt     DateTime
+  verifiedAt    DateTime?
+  userId        String?
+  user          User? @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([phone, expiresAt])
+}
+
+model PrivacyGrant {
+  id             String @id @default(cuid())
+  ownerUserId    String
+  viewerUserId   String
+  field          SensitiveField
+  grantedAt      DateTime @default(now())
+  revokedAt      DateTime?
+
+  ownerUser      User @relation("OwnerGrants", fields: [ownerUserId], references: [id])
+  viewerUser     User @relation("ViewerGrants", fields: [viewerUserId], references: [id])
+
+  @@index([ownerUserId, viewerUserId, field])
+}
+
+model PaymentEvent {
+  id             String @id @default(cuid())
+  userId         String
+  provider       String
+  amountUsd      Decimal @db.Decimal(10, 2)
+  currency       String  @default("USD")
+  externalRef    String  @unique
+  status         String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  user           User @relation(fields: [userId], references: [id])
+}
+
+model MeritOverride {
+  id             String @id @default(cuid())
+  userId         String @unique
+  grantedByAdminId String
+  reason         String
+  createdAt      DateTime @default(now())
+}
+
+model ChatMessage {
+  id             String @id @default(cuid())
+  senderUserId   String
+  roomId         String
+  body           String
+  createdAt      DateTime @default(now())
+
+  senderUser     User @relation(fields: [senderUserId], references: [id])
+  moderationFlag ModerationFlag?
+
+  @@index([roomId, createdAt])
+}
+
+model ModerationFlag {
+  id              String @id @default(cuid())
+  chatMessageId   String @unique
+  severity        ChatViolationSeverity
+  reason          String
+  aiLabel         String
+  createdAt       DateTime @default(now())
+
+  chatMessage     ChatMessage @relation(fields: [chatMessageId], references: [id])
+}
