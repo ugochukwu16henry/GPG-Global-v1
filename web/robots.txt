@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Priority routes for crawlers
+Sitemap: https://gpg-global.com/sitemap.xml
+

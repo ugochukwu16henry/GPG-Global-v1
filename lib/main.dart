@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/theme/app_theme.dart';
 import 'features/admin/screens/admin_command_center_screen.dart';
 import 'features/auth/providers/session_provider.dart';
@@ -15,7 +14,6 @@ import 'features/moderator/screens/moderator_dashboard_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = true;
   runApp(
     const ProviderScope(
       child: GpgGlobalApp(),
