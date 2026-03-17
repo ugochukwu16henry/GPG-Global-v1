@@ -135,6 +135,7 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final auth = ref.watch(backendAuthControllerProvider);
+    final compact = MediaQuery.sizeOf(context).width < 380;
     return Stack(
       alignment: Alignment.topCenter,
       children: [
@@ -236,44 +237,77 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 ),
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _toggleChip(
-                      label: 'Pathway Connect',
-                      value: profile.isPathwayConnect,
-                      onChanged: (value) {
-                        ref.read(profileProvider.notifier).setPathwayJourney(
-                              isPathwayConnect: value,
-                            );
-                        _persistProfile();
-                      },
+              compact
+                  ? Column(
+                      children: [
+                        _toggleChip(
+                          label: 'Pathway Connect',
+                          value: profile.isPathwayConnect,
+                          onChanged: (value) {
+                            ref.read(profileProvider.notifier).setPathwayJourney(
+                                  isPathwayConnect: value,
+                                );
+                            _persistProfile();
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        _toggleChip(
+                          label: 'Degree',
+                          value: profile.isDegree,
+                          onChanged: (value) {
+                            ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
+                            _persistProfile();
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        _toggleChip(
+                          label: 'Alumni',
+                          value: profile.isAlumni,
+                          onChanged: (value) {
+                            ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
+                            _persistProfile();
+                          },
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _toggleChip(
+                            label: 'Pathway Connect',
+                            value: profile.isPathwayConnect,
+                            onChanged: (value) {
+                              ref.read(profileProvider.notifier).setPathwayJourney(
+                                    isPathwayConnect: value,
+                                  );
+                              _persistProfile();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _toggleChip(
+                            label: 'Degree',
+                            value: profile.isDegree,
+                            onChanged: (value) {
+                              ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
+                              _persistProfile();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _toggleChip(
+                            label: 'Alumni',
+                            value: profile.isAlumni,
+                            onChanged: (value) {
+                              ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
+                              _persistProfile();
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _toggleChip(
-                      label: 'Degree',
-                      value: profile.isDegree,
-                      onChanged: (value) {
-                        ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
-                        _persistProfile();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _toggleChip(
-                      label: 'Alumni',
-                      value: profile.isAlumni,
-                      onChanged: (value) {
-                        ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
-                        _persistProfile();
-                      },
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 8),
               Text(
                 'Educational Journey · ${profile.academicFocus}',
@@ -294,39 +328,69 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _toggleChip(
-                      label: 'Female Safety Mode',
-                      value: profile.safeSearchFemaleOnly,
-                      onChanged: (value) {
-                        ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
-                        _persistSafetyMode(
-                          femaleOnly: value,
-                          verifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
-                        );
-                      },
+              compact
+                  ? Column(
+                      children: [
+                        _toggleChip(
+                          label: 'Female Safety Mode',
+                          value: profile.safeSearchFemaleOnly,
+                          onChanged: (value) {
+                            ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
+                            _persistSafetyMode(
+                              femaleOnly: value,
+                              verifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        _toggleChip(
+                          label: 'Verified Members Only',
+                          value: profile.safeSearchVerifiedMembersOnly,
+                          onChanged: (value) {
+                            ref
+                                .read(profileProvider.notifier)
+                                .setSafetyMode(verifiedMembersOnly: value);
+                            _persistSafetyMode(
+                              femaleOnly: profile.safeSearchFemaleOnly,
+                              verifiedMembersOnly: value,
+                            );
+                          },
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _toggleChip(
+                            label: 'Female Safety Mode',
+                            value: profile.safeSearchFemaleOnly,
+                            onChanged: (value) {
+                              ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
+                              _persistSafetyMode(
+                                femaleOnly: value,
+                                verifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _toggleChip(
+                            label: 'Verified Members Only',
+                            value: profile.safeSearchVerifiedMembersOnly,
+                            onChanged: (value) {
+                              ref
+                                  .read(profileProvider.notifier)
+                                  .setSafetyMode(verifiedMembersOnly: value);
+                              _persistSafetyMode(
+                                femaleOnly: profile.safeSearchFemaleOnly,
+                                verifiedMembersOnly: value,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _toggleChip(
-                      label: 'Verified Members Only',
-                      value: profile.safeSearchVerifiedMembersOnly,
-                      onChanged: (value) {
-                        ref
-                            .read(profileProvider.notifier)
-                            .setSafetyMode(verifiedMembersOnly: value);
-                        _persistSafetyMode(
-                          femaleOnly: profile.safeSearchFemaleOnly,
-                          verifiedMembersOnly: value,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 10),
               const Divider(height: 20),
               const Text(
@@ -349,32 +413,58 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 ),
               ),
               const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _otpController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                        labelText: 'OTP Code',
-                      ),
+              compact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                            labelText: 'OTP Code',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton.tonal(
+                          onPressed: auth.isLoading
+                              ? null
+                              : () {
+                                  ref
+                                      .read(backendAuthControllerProvider.notifier)
+                                      .sendOtp(_phoneController.text.trim());
+                                },
+                          child: const Text('Send OTP'),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                              labelText: 'OTP Code',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonal(
+                          onPressed: auth.isLoading
+                              ? null
+                              : () {
+                                  ref
+                                      .read(backendAuthControllerProvider.notifier)
+                                      .sendOtp(_phoneController.text.trim());
+                                },
+                          child: const Text('Send OTP'),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.tonal(
-                    onPressed: auth.isLoading
-                        ? null
-                        : () {
-                            ref
-                                .read(backendAuthControllerProvider.notifier)
-                                .sendOtp(_phoneController.text.trim());
-                          },
-                    child: const Text('Send OTP'),
-                  ),
-                ],
-              ),
               const SizedBox(height: 6),
               Align(
                 alignment: Alignment.centerLeft,
