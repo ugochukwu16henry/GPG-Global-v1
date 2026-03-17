@@ -23,6 +23,8 @@ class GpgGlobalApp extends StatelessWidget {
       title: 'GPG Gathering Place Global',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       home: const HomeDashboardScreen(),
     );
   }

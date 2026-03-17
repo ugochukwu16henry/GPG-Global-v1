@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/branding/sonic_identity_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/mock_data_provider.dart';
+import 'g_nexus_logo.dart';
 import 'glass_card.dart';
 
 /// Small demo integration strip:
@@ -15,6 +17,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
     final selectedCategory = ref.watch(selectedMarketplaceCategoryProvider);
+    const sonicIdentity = SonicIdentityService();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,7 +39,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Live activity · Demo',
+                    'Live activity · Grow your faith · Connect with your peers',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -47,7 +50,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 42,
+                height: 52,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: liveEvents.length,
@@ -64,8 +67,13 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                       'Chat' => Icons.chat_bubble_rounded,
                       _ => Icons.star_rounded,
                     };
+                    final toneType = switch (event.type) {
+                      'Birthday' => GpgToneType.dailyScriptureOrBirthday,
+                      'Chat' => GpgToneType.messageReceived,
+                      _ => GpgToneType.missionPeerFound,
+                    };
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
@@ -75,6 +83,13 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                         children: [
                           Icon(icon, size: 16, color: color),
                           const SizedBox(width: 6),
+                          if (event.type == 'Birthday') ...[
+                            const GNexusLogo(
+                              size: 16,
+                              variant: LogoSurfaceVariant.birthdayGlow,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 220),
                             child: Column(
@@ -85,6 +100,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                   event.message,
                                   style: TextStyle(
                                     fontSize: 11,
+                                    height: 1,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textOnSurface,
                                   ),
@@ -94,17 +110,39 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                 Text(
                                   event.timestampLabel,
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 9,
+                                    height: 1,
                                     color: AppColors.textMuted,
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => sonicIdentity.preview(toneType),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.volume_up_rounded,
+                                size: 14,
+                                color: color,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     );
                   },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Frugal stewardship: birthday and peer data are shown only with user authorization.',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -117,7 +155,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Marketplace demo filter',
+                'Marketplace demo filter · Showcase your talent',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -181,6 +219,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                 ],
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            const MeritBadge(),
                           ],
                         ),
                       ),

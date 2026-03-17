@@ -7,6 +7,7 @@ import '../widgets/gathering_feed.dart';
 import '../widgets/pathway_progress_tracker.dart';
 import '../widgets/profile_card.dart';
 import '../widgets/live_events_and_marketplace_demo.dart';
+import '../widgets/talents_near_you_panel.dart';
 
 /// Home Dashboard with Bento Grid: Profile (top-left), Pathway Progress (top-right),
 /// scrollable Gathering Feed (center). Custom nav bar and G-Nexus header.
@@ -54,7 +55,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const GNexusLogo(size: 40),
+          const GNexusLogo(size: 40, variant: LogoSurfaceVariant.appIcon),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -70,10 +71,35 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                   ),
                 ),
                 Text(
-                  'Digital Sanctuary',
+                  'Welcome Home · Glad you\'re here',
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primaryNavy.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GNexusLogo(
+                  size: 20,
+                  variant: LogoSurfaceVariant.controlRoomMonochrome,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  'Control Room',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -119,24 +145,40 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   }
 
   Widget _buildBentoWeb(BoxConstraints constraints) {
+    final feedHeight = (constraints.maxHeight * 0.5).clamp(220.0, 520.0);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 280, child: ProfileCard()),
-              const SizedBox(width: 24),
-              SizedBox(width: 200, child: PathwayProgressTracker()),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const LiveEventsAndMarketplaceDemo(),
-          const SizedBox(height: 24),
-          Expanded(child: GatheringFeed()),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: 280, child: ProfileCard()),
+                const SizedBox(width: 24),
+                SizedBox(width: 200, child: PathwayProgressTracker()),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const LiveEventsAndMarketplaceDemo(),
+            const SizedBox(height: 24),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: SizedBox(height: feedHeight, child: GatheringFeed()),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  flex: 3,
+                  child: TalentsNearYouPanel(),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
