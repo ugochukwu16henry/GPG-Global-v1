@@ -10,387 +10,591 @@ class AdminCommandCenterScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(adminCommandControllerProvider);
+    final activeRole = ref.watch(activeAdminRoleProvider);
+    final backendError = ref.watch(adminCommandErrorProvider);
+
     final aiPulse = ref.watch(mergedAiPulseProvider);
     final heatMap = ref.watch(friendSignupHeatmapProvider);
     final reviewQueue = ref.watch(rapidReviewQueueProvider);
+    final registrationVelocity = ref.watch(registrationVelocityProvider);
+    final onlineHeatmap = ref.watch(globalOnlineHeatmapProvider);
+    final ecosystem = ref.watch(ecosystemValueProvider);
+
+    final vaultUsers = ref.watch(vaultUsersProvider);
+    final selectedQuery = ref.watch(selectedAdminQueryPresetProvider);
+    final advancedResults = ref.watch(advancedSearchResultsProvider);
+
+    final genotypeAlerts = ref.watch(genotypePrivacyAlertsProvider);
+    final riskList = ref.watch(highBlockRiskListProvider);
+    final managedUsers = ref.watch(managedUsersProvider);
+    final blacklistedPhones = ref.watch(blacklistedPhonesProvider);
+    final blacklistedDevices = ref.watch(blacklistedDevicesProvider);
+
     final revenue = ref.watch(pendingRevenueUsdProvider);
+    final revenueByCategory = ref.watch(marketplaceRevenueByCategoryProvider);
+    final birthdayQueue = ref.watch(birthdayAutomationQueueProvider);
     final verificationQueue = ref.watch(verificationQueueCountProvider);
     final adPerformance = ref.watch(adPerformanceProvider);
-    final centerHealth = ref.watch(centerHealthProvider);
-    final adminRoles = ref.watch(localAdminRolesProvider);
-    final logs = ref.watch(immutableTransparencyLogProvider);
-    final managedUsers = ref.watch(managedUsersProvider);
     final applicants = ref.watch(marketplaceApplicantsProvider);
     final talents = ref.watch(talentTieringProvider);
     final ads = ref.watch(adSubmissionProvider);
-    final activeRole = ref.watch(activeAdminRoleProvider);
-    final blacklistedPhones = ref.watch(blacklistedPhonesProvider);
-    final blacklistedDevices = ref.watch(blacklistedDevicesProvider);
-    final backendError = ref.watch(adminCommandErrorProvider);
+
+    final centerHealth = ref.watch(centerHealthProvider);
+    final adminRoles = ref.watch(localAdminRolesProvider);
+    final logs = ref.watch(immutableTransparencyLogProvider);
 
     final scheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F1117),
-      appBar: AppBar(
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
         backgroundColor: const Color(0xFF0F1117),
-        title: const Text('GPG Admin Command Center'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (backendError != null) ...[
-            _card(
-              context,
-              child: Text(
-                'Backend persistence error: $backendError',
-                style: const TextStyle(color: AppColors.warmCrimson),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          _sectionTitle('Control Room Security Flow (RBAC)'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Admin Role Hierarchy'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<AdminRole>(
-                  value: activeRole,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: OutlineInputBorder(),
-                  ),
-                  items: AdminRole.values
-                      .map(
-                        (role) => DropdownMenuItem(
-                          value: role,
-                          child: Text(role.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      ref.read(activeAdminRoleProvider.notifier).state = value;
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text('Active permissions are enforced by role in each action panel.'),
-              ],
-            ),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0F1117),
+          title: const Text('GPG Admin Command Center'),
+          bottom: const TabBar(
+            isScrollable: true,
+            tabs: [
+              Tab(text: 'Overview'),
+              Tab(text: 'Vault'),
+              Tab(text: 'Security'),
+              Tab(text: 'Finance'),
+              Tab(text: 'Ops'),
+            ],
           ),
-          const SizedBox(height: 16),
-          _sectionTitle('Sector A · The Wholesome Guardrail'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        body: TabBarView(
+          children: [
+            ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                _miniTitle('AI Pulse'),
-                ...aiPulse.take(5).map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(item, style: TextStyle(color: scheme.onSurface)),
+                if (backendError != null) ...[
+                  _card(
+                    child: Text(
+                      'Backend persistence error: $backendError',
+                      style: const TextStyle(color: AppColors.warmCrimson),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _miniTitle('Heat Map (Friend Sign-ups)'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: heatMap
-                      .map(
-                        (spot) => Chip(
-                          label: Text('${spot['location']} +${spot['spike']}'),
-                          backgroundColor: AppColors.pathwayAmber.withValues(alpha: 0.22),
+                  const SizedBox(height: 12),
+                ],
+                _sectionTitle('Global Pulse (Main Overview)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniTitle('Real-Time Geographic Heatmap'),
+                      ...onlineHeatmap.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            '${entry['country']} > ${entry['state']} > ${entry['lga']} · online ${entry['online']}',
+                            style: TextStyle(color: scheme.onSurface),
+                          ),
                         ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 12),
-                _miniTitle('Rapid Review (Approve / Deny)'),
-                if (reviewQueue.isEmpty)
-                  Text('No pending review items.', style: TextStyle(color: scheme.onSurface))
-                else
-                  _rapidReviewDeck(ref, reviewQueue),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('User Disciplinary Settings (The Gavel)'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ...managedUsers.map(
-                  (user) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 12),
+                      _miniTitle('Registration Velocity'),
+                      ...registrationVelocity.map(
+                        (line) => Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(line, style: TextStyle(color: scheme.onSurface)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Total Ecosystem Value'),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          Text('${user.displayName} (${user.id})'),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Suspended: ${user.isSuspended} · Shadow: ${user.isShadowBanned} · Ban: ${user.isDeletedBanned}',
-                            style: const TextStyle(color: AppColors.pathwayAmber, fontSize: 12),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.tonal(
-                                onPressed: () => controller.suspendUser(userId: user.id, hours: 24),
-                                child: const Text('Suspend 24h'),
-                              ),
-                              FilledButton.tonal(
-                                onPressed: () => controller.suspendUser(userId: user.id, hours: 7 * 24),
-                                child: const Text('Suspend 7d'),
-                              ),
-                              FilledButton.tonal(
-                                onPressed: () => controller.suspendUser(userId: user.id, hours: 30 * 24),
-                                child: const Text('Suspend 30d'),
-                              ),
-                              FilledButton.tonal(
-                                onPressed: () => controller.shadowBanUser(userId: user.id),
-                                child: const Text('Shadow Ban'),
-                              ),
-                              FilledButton.tonal(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.25),
-                                ),
-                                onPressed: () => controller.deleteBanUser(userId: user.id),
-                                child: const Text('Delete / Ban'),
-                              ),
-                            ],
-                          ),
+                          Chip(label: Text('Active ${ecosystem['totalActiveUsers']}')),
+                          Chip(label: Text('Members ${ecosystem['members']}')),
+                          Chip(label: Text('Friends/Seekers ${ecosystem['friendsSeekers']}')),
+                          Chip(label: Text('Males ${ecosystem['males']}')),
+                          Chip(label: Text('Females ${ecosystem['females']}')),
+                          Chip(label: Text('Single ${ecosystem['single']}')),
+                          Chip(label: Text('Married ${ecosystem['married']}')),
                         ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                Text(
-                  'Blacklist size · Phones: ${blacklistedPhones.length}, Devices: ${blacklistedDevices.length}',
-                  style: const TextStyle(color: AppColors.pathwayAmber),
+                const SizedBox(height: 16),
+                _sectionTitle('Sector A · The Wholesome Guardrail'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniTitle('AI Pulse'),
+                      ...aiPulse.take(5).map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(item, style: TextStyle(color: scheme.onSurface)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Heat Map (Friend Sign-ups)'),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: heatMap
+                            .map(
+                              (spot) => Chip(
+                                label: Text('${spot['location']} +${spot['spike']}'),
+                                backgroundColor: AppColors.pathwayAmber.withValues(alpha: 0.22),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Rapid Review (Approve / Deny)'),
+                      if (reviewQueue.isEmpty)
+                        Text('No pending review items.', style: TextStyle(color: scheme.onSurface))
+                      else
+                        _rapidReviewDeck(ref, reviewQueue),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Moderator UI Widgets'),
+                _card(
+                  child: Column(
+                    children: const [
+                      _WidgetRow('Active Shield', 'Shows Safety Score', 'View 5 pending reports'),
+                      _WidgetRow('Talent Desk', 'Shows pending marketplace funds', 'Verify 12 Skill Certificates'),
+                      _WidgetRow('Faith Journey', 'Tracks friend-to-member updates', 'Send Welcome Home notifications'),
+                      _WidgetRow('Traffic Taiji', 'Shows global latency by region', 'Optimize Node 4'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('1 Billion Users Strategy'),
+                _card(
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Level 1: Global AI (Llama 4) filters most toxicity/spam.'),
+                      SizedBox(height: 6),
+                      Text('Level 2: Local Admins handle local group disputes.'),
+                      SizedBox(height: 6),
+                      Text('Level 3: GPG Staff handles legal, finance, and ban appeals.'),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Sector B · Talent Marketplace & Economy'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                Text('Payment Tracking: \\$${revenue.toStringAsFixed(2)} pending',
-                    style: TextStyle(color: scheme.onSurface)),
-                const SizedBox(height: 8),
-                Text('Verification Queue: $verificationQueue skill certificates',
-                    style: TextStyle(color: scheme.onSurface)),
-                const SizedBox(height: 12),
-                _miniTitle('Ad Performance'),
-                ...adPerformance.map(
-                  (entry) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(entry['ad'].toString(),
-                        style: TextStyle(color: scheme.onSurface)),
-                    trailing: Text('${entry['clicks']} clicks',
-                        style: const TextStyle(color: AppColors.pathwayAmber)),
+                _sectionTitle('User Management Vault (Privacy-Compliant)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniTitle('You CAN See'),
+                      const Text('Full Name, Age, Phone · LGA/State/Country · Blood Group/Genotype · Mission/Pathway · Payments'),
+                      const SizedBox(height: 8),
+                      _miniTitle('You CANNOT See'),
+                      const Text('Private chat messages · User passwords · Permanently deleted photos · Private prayer/testimony drafts'),
+                      const SizedBox(height: 12),
+                      _miniTitle('Metadata Records'),
+                      ...vaultUsers.map(
+                        (u) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            '${u.fullName} · ${u.age} · ${u.phone} · ${u.lga}, ${u.state} · ${u.missionName} · ${u.pathwayStatus}',
+                            style: TextStyle(color: scheme.onSurface),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                _miniTitle('Gatekeeper Queue'),
-                ...applicants.map(
-                  (app) => Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${app.displayName} · ${app.skillCertificate} · paid=${app.hasPaid}',
+                const SizedBox(height: 16),
+                _sectionTitle('Advanced Search & Filtering (Powerhouse)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<AdminQueryPreset>(
+                        value: selectedQuery,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: AdminQueryPreset.singleFemalesLagosFinalYear,
+                            child: Text('Single Females in Lagos, final year Degree'),
+                          ),
+                          DropdownMenuItem(
+                            value: AdminQueryPreset.returnedMissionariesAbidjan,
+                            child: Text('Returned Missionaries from Cote d\'Ivoire Abidjan'),
+                          ),
+                          DropdownMenuItem(
+                            value: AdminQueryPreset.electriciansIkejaAa,
+                            child: Text('Certified Electricians in Ikeja with AA genotype'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            ref.read(selectedAdminQueryPresetProvider.notifier).state = value;
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      if (advancedResults.isEmpty)
+                        const Text('No matching results.')
+                      else
+                        ...advancedResults.map(
+                          (u) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              '${u.fullName} · ${u.relationshipStatus} · ${u.gender} · ${u.pathwayStatus} · ${u.missionName} · ${u.talent} · ${u.genotype}',
+                            ),
                           ),
                         ),
-                        FilledButton.tonal(
-                          onPressed: () => controller.approveMarketplace(app.id),
-                          child: const Text('Approve for Marketplace'),
-                        ),
-                        const SizedBox(width: 6),
-                        FilledButton.tonal(
-                          onPressed: () => controller.grantMeritAccess(
-                            applicantId: app.id,
-                            reason: 'Service scholarship / Pathway excellence',
-                          ),
-                          child: const Text('Grant Merit Access'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _miniTitle('Talent Tiering (GPG Recommended)'),
-                ...talents.map(
-                  (talent) => Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${talent.displayName} · rating ${talent.rating.toStringAsFixed(1)}',
-                          ),
-                        ),
-                        FilledButton.tonal(
-                          onPressed: () => controller.featureTalent(talent.id),
-                          child: Text(talent.isFeatured ? 'Unfeature' : 'Feature'),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Ad Approval Portal (The Standard)'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: ads
-                  .map(
-                    (ad) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(10),
+            ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _sectionTitle('Security Shield (AI Moderation Room)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniTitle('Automatic Flagging Desk'),
+                      const Text('Flagged scam/un-wholesome posts are frozen and sent to review queue.'),
+                      const SizedBox(height: 8),
+                      _miniTitle('Genotype Privacy Red Alerts'),
+                      ...genotypeAlerts.map(
+                        (alert) => Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(alert, style: const TextStyle(color: AppColors.warmCrimson)),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${ad.title} · ${ad.creativeType}'),
-                            const SizedBox(height: 4),
-                            Text(ad.copyText),
-                            const SizedBox(height: 4),
-                            Text('Targeting: ${ad.targeting}',
-                                style: const TextStyle(color: AppColors.pathwayAmber)),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
+                      ),
+                      const SizedBox(height: 8),
+                      _miniTitle('Shadow Audit Risk List'),
+                      ...riskList.map(
+                        (risk) => Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${risk['displayName']} (${risk['userId']}) · ${risk['blocksLast24h']} blocks in 24h',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('User Disciplinary Settings (The Gavel)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...managedUsers.map(
+                        (user) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                FilledButton.tonal(
-                                  onPressed: () => controller.moderateAd(adId: ad.id, approved: true),
-                                  child: const Text('Approve - Aligns with GPG Values'),
+                                Text('${user.displayName} (${user.id})'),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Suspended: ${user.isSuspended} · Shadow: ${user.isShadowBanned} · Ban: ${user.isDeletedBanned}',
+                                  style: const TextStyle(color: AppColors.pathwayAmber, fontSize: 12),
                                 ),
-                                FilledButton.tonal(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.24),
-                                  ),
-                                  onPressed: () => controller.moderateAd(adId: ad.id, approved: false),
-                                  child: const Text('Reject - Inappropriate Content'),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    FilledButton.tonal(
+                                      onPressed: () => controller.suspendUser(userId: user.id, hours: 24),
+                                      child: const Text('Suspend 24h'),
+                                    ),
+                                    FilledButton.tonal(
+                                      onPressed: () => controller.suspendUser(userId: user.id, hours: 7 * 24),
+                                      child: const Text('Suspend 7d'),
+                                    ),
+                                    FilledButton.tonal(
+                                      onPressed: () => controller.suspendUser(userId: user.id, hours: 30 * 24),
+                                      child: const Text('Suspend 30d'),
+                                    ),
+                                    FilledButton.tonal(
+                                      onPressed: () => controller.shadowBanUser(userId: user.id),
+                                      child: const Text('Shadow Ban'),
+                                    ),
+                                    FilledButton.tonal(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.25),
+                                      ),
+                                      onPressed: () => controller.deleteBanUser(userId: user.id),
+                                      child: const Text('Delete / Ban'),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Sector C · Gathering Place Management'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _miniTitle('Center Health'),
-                ...centerHealth.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '${entry['center']} · ${entry['activeGroups']} active groups',
-                      style: TextStyle(color: scheme.onSurface),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _miniTitle('Role Management'),
-                ...adminRoles.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '${entry['leader']} → ${entry['role']}',
-                      style: TextStyle(color: scheme.onSurface),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Moderator UI Widgets'),
-          _card(
-            context,
-            child: Column(
-              children: const [
-                _WidgetRow('Active Shield', 'Shows Safety Score', 'View 5 pending reports'),
-                _WidgetRow('Talent Desk', 'Shows pending marketplace funds', 'Verify 12 Skill Certificates'),
-                _WidgetRow('Faith Journey', 'Tracks friend-to-member updates', 'Send Welcome Home notifications'),
-                _WidgetRow('Traffic Taiji', 'Shows global latency by region', 'Optimize Node 4'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('1 Billion Users Strategy'),
-          _card(
-            context,
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Level 1: Global AI (Llama 4) filters most toxicity/spam.'),
-                SizedBox(height: 6),
-                Text('Level 2: Local Admins handle local group disputes.'),
-                SizedBox(height: 6),
-                Text('Level 3: GPG Staff handles legal, finance, and ban appeals.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Admin Transparency Log'),
-          _card(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: logs
-                  .map(
-                    (entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        '${entry.timestamp} · ${entry.actor} · ${entry.action} · ${entry.target} · ${entry.disciplineStep}',
-                        style: TextStyle(color: scheme.onSurface, fontSize: 12),
+                      Text(
+                        'Blacklist size · Phones: ${blacklistedPhones.length}, Devices: ${blacklistedDevices.length}',
+                        style: const TextStyle(color: AppColors.pathwayAmber),
                       ),
-                    ),
-                  )
-                  .toList(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _sectionTitle('Financial & Marketplace Control'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniTitle('Marketplace Revenue by Category'),
+                      ...revenueByCategory.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text('${entry['category']}: \$${entry['revenueUsd']}'),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Birthday Automation Queue'),
+                      ...birthdayQueue.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text('${entry['date']} · ${entry['name']} · ${entry['status']}'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Sector B · Talent Marketplace & Economy'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Payment Tracking: \$${revenue.toStringAsFixed(2)} pending',
+                          style: TextStyle(color: scheme.onSurface)),
+                      const SizedBox(height: 8),
+                      Text('Verification Queue: $verificationQueue skill certificates',
+                          style: TextStyle(color: scheme.onSurface)),
+                      const SizedBox(height: 12),
+                      _miniTitle('Ad Performance'),
+                      ...adPerformance.map(
+                        (entry) => ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(entry['ad'].toString(), style: TextStyle(color: scheme.onSurface)),
+                          trailing: Text('${entry['clicks']} clicks',
+                              style: const TextStyle(color: AppColors.pathwayAmber)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Gatekeeper Queue'),
+                      ...applicants.map(
+                        (app) => Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${app.displayName} · ${app.skillCertificate} · paid=${app.hasPaid}',
+                                ),
+                              ),
+                              FilledButton.tonal(
+                                onPressed: () => controller.approveMarketplace(app.id),
+                                child: const Text('Approve for Marketplace'),
+                              ),
+                              const SizedBox(width: 6),
+                              FilledButton.tonal(
+                                onPressed: () => controller.grantMeritAccess(
+                                  applicantId: app.id,
+                                  reason: 'Service scholarship / Pathway excellence',
+                                ),
+                                child: const Text('Grant Merit Access'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Talent Tiering (GPG Recommended)'),
+                      ...talents.map(
+                        (talent) => Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${talent.displayName} · rating ${talent.rating.toStringAsFixed(1)}',
+                                ),
+                              ),
+                              FilledButton.tonal(
+                                onPressed: () => controller.featureTalent(talent.id),
+                                child: Text(talent.isFeatured ? 'Unfeature' : 'Feature'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Ad Approval Portal (The Standard)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: ads
+                        .map(
+                          (ad) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${ad.title} · ${ad.creativeType}'),
+                                  const SizedBox(height: 4),
+                                  Text(ad.copyText),
+                                  const SizedBox(height: 4),
+                                  Text('Targeting: ${ad.targeting}',
+                                      style: const TextStyle(color: AppColors.pathwayAmber)),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      FilledButton.tonal(
+                                        onPressed: () => controller.moderateAd(adId: ad.id, approved: true),
+                                        child: const Text('Approve - Aligns with GPG Values'),
+                                      ),
+                                      FilledButton.tonal(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.24),
+                                        ),
+                                        onPressed: () => controller.moderateAd(adId: ad.id, approved: false),
+                                        child: const Text('Reject - Inappropriate Content'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+            ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _sectionTitle('Control Room Security Flow (RBAC)'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Admin Role Hierarchy'),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<AdminRole>(
+                        value: activeRole,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                        items: AdminRole.values
+                            .map(
+                              (role) => DropdownMenuItem(
+                                value: role,
+                                child: Text(role.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            ref.read(activeAdminRoleProvider.notifier).state = value;
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('Active permissions are enforced by role in each action panel.'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Sector C · Gathering Place Management'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniTitle('Center Health'),
+                      ...centerHealth.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            '${entry['center']} · ${entry['activeGroups']} active groups',
+                            style: TextStyle(color: scheme.onSurface),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _miniTitle('Role Management'),
+                      ...adminRoles.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            '${entry['leader']} → ${entry['role']}',
+                            style: TextStyle(color: scheme.onSurface),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Admin Transparency Log'),
+                _card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: logs
+                        .map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              '${entry.timestamp} · ${entry.actor} · ${entry.action} · ${entry.target} · ${entry.disciplineStep}',
+                              style: TextStyle(color: scheme.onSurface, fontSize: 12),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -466,7 +670,7 @@ class AdminCommandCenterScreen extends ConsumerWidget {
     );
   }
 
-  Widget _card(BuildContext context, {required Widget child}) {
+  Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),

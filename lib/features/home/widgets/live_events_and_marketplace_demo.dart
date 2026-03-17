@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/branding/sonic_identity_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../backend/providers/backend_live_providers.dart';
+import '../../backend/providers/boundary_providers.dart';
 import '../providers/mock_data_provider.dart';
 import 'g_nexus_logo.dart';
 import 'glass_card.dart';
@@ -33,6 +34,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
+    final previewMessages = ref.watch(missionPeerChatPreviewProvider);
     final selectedCategory = ref.watch(selectedMarketplaceCategoryProvider);
     final backendState = ref.watch(backendDemoControllerProvider);
     final realtimeRedFlag = ref.watch(backendRedFlagStreamProvider);
@@ -149,6 +151,44 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                 color: color,
                               ),
                             ),
+                          ),
+                          PopupMenuButton<String>(
+                            icon: Icon(
+                              Icons.more_horiz,
+                              size: 14,
+                              color: color,
+                            ),
+                            onSelected: (value) async {
+                              final controller = ref.read(boundaryControllerProvider.notifier);
+                              if (value == 'block') {
+                                await controller.blockUser(
+                                  blockedId: event.id,
+                                  reasonCode: 'HARASSMENT',
+                                );
+                              } else if (value == 'mute') {
+                                await controller.muteUser(mutedId: event.id);
+                              } else if (value == 'report') {
+                                await controller.reportUser(
+                                  reportedId: event.id,
+                                  reasonCode: 'HARASSMENT',
+                                  detail: 'Reported from live event menu',
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'block',
+                                child: Text('Block User'),
+                              ),
+                              PopupMenuItem(
+                                value: 'mute',
+                                child: Text('Mute User'),
+                              ),
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Text('Report User'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -319,11 +359,160 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                             ),
                             const SizedBox(width: 8),
                             const MeritBadge(),
+                            const SizedBox(width: 4),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_horiz,
+                                size: 16,
+                                color: AppColors.textMuted,
+                              ),
+                              onSelected: (value) async {
+                                final controller = ref.read(boundaryControllerProvider.notifier);
+                                if (value == 'block') {
+                                  await controller.blockUser(
+                                    blockedId: listing.id,
+                                    reasonCode: 'HARASSMENT',
+                                  );
+                                } else if (value == 'mute') {
+                                  await controller.muteUser(mutedId: listing.id);
+                                } else if (value == 'report') {
+                                  await controller.reportUser(
+                                    reportedId: listing.id,
+                                    reasonCode: 'SCAM',
+                                    detail: 'Reported from marketplace row menu',
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'block',
+                                  child: Text('Block User'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'mute',
+                                  child: Text('Mute User'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'report',
+                                  child: Text('Report User'),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
                     )
                     .toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        GlassCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mission Peer Chat Preview',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textOnSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...previewMessages.map(
+                (message) => Align(
+                  alignment:
+                      message.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    decoration: BoxDecoration(
+                      color: message.isMine
+                          ? AppColors.primaryNavy.withValues(alpha: 0.14)
+                          : AppColors.primaryNavy.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message.senderName,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryNavy,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                message.body,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textOnSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!message.isMine)
+                          PopupMenuButton<String>(
+                            icon: const Icon(
+                              Icons.more_horiz,
+                              size: 16,
+                              color: AppColors.textMuted,
+                            ),
+                            onSelected: (value) async {
+                              final controller = ref.read(boundaryControllerProvider.notifier);
+                              if (value == 'block') {
+                                await controller.blockUser(
+                                  blockedId: message.senderUserId,
+                                  reasonCode: 'HARASSMENT',
+                                );
+                              } else if (value == 'mute') {
+                                await controller.muteUser(mutedId: message.senderUserId);
+                              } else if (value == 'report') {
+                                await controller.reportUser(
+                                  reportedId: message.senderUserId,
+                                  reasonCode: 'HARASSMENT',
+                                  detail: 'Reported from mission peer chat bubble',
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'block',
+                                child: Text('Block User'),
+                              ),
+                              PopupMenuItem(
+                                value: 'mute',
+                                child: Text('Mute User'),
+                              ),
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Text('Report User'),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Text(
+                'Blocked users are collapsed/hidden in shared group chats to reduce friction.',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                ),
               ),
             ],
           ),

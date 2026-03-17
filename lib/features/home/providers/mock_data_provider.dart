@@ -324,3 +324,45 @@ final filteredMarketplaceListingsProvider = Provider<List<MarketplaceListing>>((
   return _allMarketplaceListings.where((e) => e.category == selected).toList();
 });
 
+class MissionPeerChatPreviewMessage {
+  const MissionPeerChatPreviewMessage({
+    required this.id,
+    required this.senderUserId,
+    required this.senderName,
+    required this.body,
+    required this.isMine,
+  });
+
+  final String id;
+  final String senderUserId;
+  final String senderName;
+  final String body;
+  final bool isMine;
+}
+
+final missionPeerChatPreviewProvider = Provider<List<MissionPeerChatPreviewMessage>>((ref) {
+  return const [
+    MissionPeerChatPreviewMessage(
+      id: 'c1',
+      senderUserId: 'u2001',
+      senderName: 'Sister Mercy',
+      body: 'Anyone free for Pathway study tonight at 8 PM?',
+      isMine: false,
+    ),
+    MissionPeerChatPreviewMessage(
+      id: 'c2',
+      senderUserId: 'demo-user-1',
+      senderName: 'You',
+      body: 'Yes, I can join. Let’s review software dev assignment 3.',
+      isMine: true,
+    ),
+    MissionPeerChatPreviewMessage(
+      id: 'c3',
+      senderUserId: 'u2002',
+      senderName: 'Brother Daniel',
+      body: 'Great. I will share the zoom link in 10 mins.',
+      isMine: false,
+    ),
+  ];
+});
+

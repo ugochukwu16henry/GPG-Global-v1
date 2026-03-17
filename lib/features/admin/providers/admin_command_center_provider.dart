@@ -351,6 +351,197 @@ final mergedAiPulseProvider = Provider<List<String>>((ref) {
   );
 });
 
+enum AdminQueryPreset {
+  singleFemalesLagosFinalYear,
+  returnedMissionariesAbidjan,
+  electriciansIkejaAa,
+}
+
+class VaultUserMetadata {
+  const VaultUserMetadata({
+    required this.id,
+    required this.fullName,
+    required this.age,
+    required this.phone,
+    required this.country,
+    required this.state,
+    required this.lga,
+    required this.memberType,
+    required this.gender,
+    required this.relationshipStatus,
+    required this.pathwayStatus,
+    required this.academicYear,
+    required this.missionName,
+    required this.talent,
+    required this.bloodGroup,
+    required this.genotype,
+  });
+
+  final String id;
+  final String fullName;
+  final int age;
+  final String phone;
+  final String country;
+  final String state;
+  final String lga;
+  final String memberType;
+  final String gender;
+  final String relationshipStatus;
+  final String pathwayStatus;
+  final String academicYear;
+  final String missionName;
+  final String talent;
+  final String bloodGroup;
+  final String genotype;
+}
+
+final registrationVelocityProvider = Provider<List<String>>((ref) {
+  return const [
+    '14 new Friends joined in Accra',
+    '5 Members updated to BYU-Pathway Degree in Nairobi',
+    '9 Friend signups this hour in Benin City',
+  ];
+});
+
+final globalOnlineHeatmapProvider = Provider<List<Map<String, Object>>>((ref) {
+  return const [
+    {'country': 'Nigeria', 'state': 'Lagos', 'lga': 'Ikeja', 'online': 182},
+    {'country': 'Ghana', 'state': 'Greater Accra', 'lga': 'Accra Metro', 'online': 126},
+    {'country': 'Kenya', 'state': 'Nairobi', 'lga': 'Westlands', 'online': 74},
+    {'country': 'USA', 'state': 'Utah', 'lga': 'Salt Lake City', 'online': 63},
+  ];
+});
+
+final ecosystemValueProvider = Provider<Map<String, int>>((ref) {
+  return const {
+    'totalActiveUsers': 15420,
+    'members': 8421,
+    'friendsSeekers': 6999,
+    'males': 7240,
+    'females': 8180,
+    'single': 10304,
+    'married': 5116,
+  };
+});
+
+final vaultUsersProvider = Provider<List<VaultUserMetadata>>((ref) {
+  return const [
+    VaultUserMetadata(
+      id: 'u3001',
+      fullName: 'Sister Ada Okafor',
+      age: 24,
+      phone: '+2348012340001',
+      country: 'Nigeria',
+      state: 'Lagos',
+      lga: 'Ikeja',
+      memberType: 'Member',
+      gender: 'Female',
+      relationshipStatus: 'Single',
+      pathwayStatus: 'Degree',
+      academicYear: 'Final Year',
+      missionName: 'Nigeria Lagos Mission',
+      talent: 'Electrician',
+      bloodGroup: 'A+',
+      genotype: 'AA',
+    ),
+    VaultUserMetadata(
+      id: 'u3002',
+      fullName: 'Brother Kofi Mensah',
+      age: 27,
+      phone: '+233241220011',
+      country: 'Ghana',
+      state: 'Greater Accra',
+      lga: 'Accra Metro',
+      memberType: 'Member',
+      gender: 'Male',
+      relationshipStatus: 'Single',
+      pathwayStatus: 'Alumni',
+      academicYear: 'Graduated',
+      missionName: 'Cote d\'Ivoire Abidjan Mission',
+      talent: 'Teacher',
+      bloodGroup: 'O+',
+      genotype: 'AS',
+    ),
+    VaultUserMetadata(
+      id: 'u3003',
+      fullName: 'Brother Daniel Aina',
+      age: 29,
+      phone: '+2348099900011',
+      country: 'Nigeria',
+      state: 'Lagos',
+      lga: 'Ikeja',
+      memberType: 'Friend/Seeker',
+      gender: 'Male',
+      relationshipStatus: 'Married',
+      pathwayStatus: 'Connect',
+      academicYear: 'Year 1',
+      missionName: 'Nigeria Benin Mission',
+      talent: 'Electrician',
+      bloodGroup: 'B+',
+      genotype: 'AA',
+    ),
+  ];
+});
+
+final selectedAdminQueryPresetProvider =
+    StateProvider<AdminQueryPreset>((ref) => AdminQueryPreset.singleFemalesLagosFinalYear);
+
+final advancedSearchResultsProvider = Provider<List<VaultUserMetadata>>((ref) {
+  final users = ref.watch(vaultUsersProvider);
+  final preset = ref.watch(selectedAdminQueryPresetProvider);
+  switch (preset) {
+    case AdminQueryPreset.singleFemalesLagosFinalYear:
+      return users
+          .where((u) =>
+              u.relationshipStatus == 'Single' &&
+              u.gender == 'Female' &&
+              u.state == 'Lagos' &&
+              u.pathwayStatus == 'Degree' &&
+              u.academicYear == 'Final Year')
+          .toList(growable: false);
+    case AdminQueryPreset.returnedMissionariesAbidjan:
+      return users
+          .where((u) =>
+              u.missionName == 'Cote d\'Ivoire Abidjan Mission' &&
+              u.pathwayStatus == 'Alumni')
+          .toList(growable: false);
+    case AdminQueryPreset.electriciansIkejaAa:
+      return users
+          .where((u) => u.talent == 'Electrician' && u.lga == 'Ikeja' && u.genotype == 'AA')
+          .toList(growable: false);
+  }
+});
+
+final genotypePrivacyAlertsProvider = Provider<List<String>>((ref) {
+  return const [
+    'Red Alert: Unauthorized genotype access attempt blocked for user u3001',
+    'Red Alert: Sensitive data query from unverified role denied in Lagos cluster',
+  ];
+});
+
+final highBlockRiskListProvider = Provider<List<Map<String, Object>>>((ref) {
+  return const [
+    {'userId': 'u1003', 'displayName': 'Friend Leo', 'blocksLast24h': 53},
+    {'userId': 'u2188', 'displayName': 'Unknown Seeker Account', 'blocksLast24h': 31},
+  ];
+});
+
+final marketplaceRevenueByCategoryProvider = Provider<List<Map<String, Object>>>((ref) {
+  return const [
+    {'category': 'Electricians', 'revenueUsd': 1240},
+    {'category': 'Teachers', 'revenueUsd': 940},
+    {'category': 'Designers', 'revenueUsd': 610},
+  ];
+});
+
+final birthdayAutomationQueueProvider = Provider<List<Map<String, String>>>((ref) {
+  return const [
+    {'date': '2026-03-18', 'name': 'Sister Mercy', 'status': 'Authorized Wish Scheduled'},
+    {'date': '2026-03-19', 'name': 'Brother Adam', 'status': 'Queued'},
+    {'date': '2026-03-20', 'name': 'Sister Ruth', 'status': 'Queued'},
+  ];
+});
+
 class AdminCommandController {
   AdminCommandController(this._ref);
 

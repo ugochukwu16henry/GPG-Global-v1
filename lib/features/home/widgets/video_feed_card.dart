@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../backend/providers/boundary_providers.dart';
 import '../providers/mock_data_provider.dart';
 import 'glass_card.dart';
 
 /// Single video/post card: 12px rounded corners and overlay "Hire Talent" button.
-class VideoFeedCard extends StatelessWidget {
+class VideoFeedCard extends ConsumerWidget {
   const VideoFeedCard({
     super.key,
     required this.item,
@@ -13,7 +15,7 @@ class VideoFeedCard extends StatelessWidget {
   final FeedItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
       borderRadius: 12,
       padding: EdgeInsets.zero,
@@ -78,14 +80,58 @@ class VideoFeedCard extends StatelessWidget {
                     ),
                     if (item.subtitle != null) ...[
                       const SizedBox(height: 2),
-                      Text(
-                        item.subtitle!,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 11,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.subtitle!,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                            icon: Icon(
+                              Icons.more_horiz,
+                              size: 16,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            onSelected: (value) async {
+                              final controller = ref.read(boundaryControllerProvider.notifier);
+                              if (value == 'block') {
+                                await controller.blockUser(
+                                  blockedId: item.id,
+                                  reasonCode: 'HARASSMENT',
+                                );
+                              } else if (value == 'mute') {
+                                await controller.muteUser(mutedId: item.id);
+                              } else if (value == 'report') {
+                                await controller.reportUser(
+                                  reportedId: item.id,
+                                  reasonCode: 'HARASSMENT',
+                                  detail: 'Reported from feed card menu',
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'block',
+                                child: Text('Block User'),
+                              ),
+                              PopupMenuItem(
+                                value: 'mute',
+                                child: Text('Mute User'),
+                              ),
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Text('Report User'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                     const SizedBox(height: 8),
