@@ -36,7 +36,9 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = screenWidth < 380;
+    // Many phones are ~390-430px wide; using <380 leaves them in the
+    // "desktop-ish" layout, causing alignment/overflow issues.
+    final isCompact = screenWidth < 450;
     final messageController = TextEditingController();
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
@@ -78,7 +80,9 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: isCompact ? 64 : 52,
+                // Give the horizontal chips enough vertical room so they don't
+                // appear clipped/misaligned on small screens.
+                height: isCompact ? 74 : 56,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: liveEvents.length,
@@ -109,6 +113,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Icon(icon, size: 16, color: color),
                           const SizedBox(width: 6),
@@ -216,6 +221,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               Wrap(
+                alignment: isCompact ? WrapAlignment.center : WrapAlignment.start,
                 spacing: 6,
                 runSpacing: 6,
                 children: [
@@ -322,6 +328,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Wrap(
+                alignment: isCompact ? WrapAlignment.center : WrapAlignment.start,
                 spacing: 8,
                 runSpacing: 4,
                 children: [
