@@ -21,3 +21,14 @@ abstract class AppColors {
   static const Color darkSurface = Color(0xFF0A0A0A);
   static const Color darkOnSurface = Color(0xFFFFFFFF);
 }
+
+/// Compatibility helper:
+/// Some Flutter versions don't include `Color.withValues(...)`.
+/// We use `withValues(alpha: ...)` widely for glassmorphism tinting.
+extension ColorWithValuesCompat on Color {
+  Color withValues({double? alpha}) {
+    if (alpha == null) return this;
+    final a = alpha.clamp(0.0, 1.0);
+    return withOpacity(a);
+  }
+}
