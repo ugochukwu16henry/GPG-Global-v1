@@ -67,7 +67,7 @@ class SecurityGuardrailsService {
     _validateId(ownerId, 'ownerId');
     _validateId(blockedUserId, 'blockedUserId');
     if (ownerId == blockedUserId) {
-      throw const ArgumentError('A user cannot block themselves.');
+      throw ArgumentError('A user cannot block themselves.');
     }
     final blockedSet = _blockedByUser.putIfAbsent(ownerId, () => <String>{});
     blockedSet.add(blockedUserId);
@@ -85,7 +85,9 @@ class SecurityGuardrailsService {
   }) {
     _validateId(ownerId, 'ownerId');
     final blocked = _blockedByUser[ownerId] ?? <String>{};
-    return feedAuthorIds.where((authorId) => !blocked.contains(authorId)).toList(
+    return feedAuthorIds
+        .where((authorId) => !blocked.contains(authorId))
+        .toList(
           growable: false,
         );
   }
@@ -98,7 +100,8 @@ class SecurityGuardrailsService {
     _validateId(reporterId, 'reporterId');
     _validateId(postId, 'postId');
     final ticket = ReportTicket(
-      reportId: '${reporterId}_$postId_${DateTime.now().millisecondsSinceEpoch}',
+      reportId:
+          '${reporterId}_${postId}_${DateTime.now().millisecondsSinceEpoch}',
       postId: postId,
       reporterId: reporterId,
       reason: reason,
