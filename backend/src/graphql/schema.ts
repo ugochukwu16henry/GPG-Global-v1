@@ -486,7 +486,7 @@ type AppRole = 'guest' | 'user' | 'moderator' | 'admin';
 
 type RequestContext = {
   userId: string;
-  role: AppRole;
+  role: string;
 };
 
 function requireAuthenticated(context: RequestContext) {
@@ -495,14 +495,14 @@ function requireAuthenticated(context: RequestContext) {
   }
 }
 
-function requireRole(context: RequestContext, allowedRoles: AppRole[]) {
+function requireRole(context: RequestContext, allowedRoles: string[]) {
   requireAuthenticated(context);
   if (!allowedRoles.includes(context.role)) {
     throw new Error('Forbidden for this role.');
   }
 }
 
-function requireSelfOrRole(context: RequestContext, targetUserId: string, allowedRoles: AppRole[]) {
+function requireSelfOrRole(context: RequestContext, targetUserId: string, allowedRoles: string[]) {
   requireAuthenticated(context);
   if (context.userId == targetUserId) {
     return;
@@ -574,10 +574,10 @@ export const resolvers = {
       const blockedIds = await boundaryService.blockedUserIdsForViewer(context.userId);
       return prisma.user.findMany({
         where: {
-          id: blockedIds.isEmpty
+          id: blockedIds.size == 0
               ? undefined
               : {
-                  notIn: blockedIds.toList(),
+                  notIn: Array.from(blockedIds),
                 },
           pathwayStatus: args.education,
           missionId: args.missionId,

@@ -45,7 +45,14 @@ app.use(
       const headerUserId = (req.headers['x-user-id'] as string | undefined) ?? 'anonymous';
 
       const userId = verified?.userId ?? headerUserId;
-      const role = verified?.role ?? (headerUserId == 'anonymous' ? 'guest' : 'user');
+      const candidateRole = verified?.role;
+      const role =
+        candidateRole == 'admin' ||
+        candidateRole == 'moderator' ||
+        candidateRole == 'user' ||
+        candidateRole == 'guest'
+          ? candidateRole
+          : (headerUserId == 'anonymous' ? 'guest' : 'user');
 
       return {
         userId,
