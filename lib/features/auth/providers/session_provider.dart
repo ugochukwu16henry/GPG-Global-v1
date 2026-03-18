@@ -38,7 +38,8 @@ class SessionState {
       role: role ?? this.role,
       displayName: displayName ?? this.displayName,
       identity: identity ?? this.identity,
-      moderatorGatheringPlace: moderatorGatheringPlace ?? this.moderatorGatheringPlace,
+      moderatorGatheringPlace:
+          moderatorGatheringPlace ?? this.moderatorGatheringPlace,
       moderatorRole: moderatorRole ?? this.moderatorRole,
       sessionToken: sessionToken ?? this.sessionToken,
       statusMessage: statusMessage,
@@ -50,7 +51,8 @@ class SessionController extends StateNotifier<SessionState> {
   SessionController() : super(const SessionState());
 
   void signInUser({required String displayName}) {
-    state = state.copyWith(role: AppRole.user, displayName: displayName, statusMessage: null);
+    state = state.copyWith(
+        role: AppRole.user, displayName: displayName, statusMessage: null);
   }
 
   void signUpUser({
@@ -99,7 +101,8 @@ class SessionController extends StateNotifier<SessionState> {
       state = state.copyWith(statusMessage: 'Invalid admin access key.');
       return false;
     }
-    state = state.copyWith(role: AppRole.admin, displayName: 'GPG Admin', statusMessage: null);
+    state = state.copyWith(
+        role: AppRole.admin, displayName: 'GPG Admin', statusMessage: null);
     return true;
   }
 
@@ -129,6 +132,7 @@ class SessionController extends StateNotifier<SessionState> {
   }
 }
 
-final sessionControllerProvider = StateNotifierProvider<SessionController, SessionState>((ref) {
+final sessionControllerProvider =
+    StateNotifierProvider<SessionController, SessionState>((ref) {
   return SessionController();
 });

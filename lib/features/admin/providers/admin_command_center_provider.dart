@@ -176,7 +176,8 @@ class AdSubmission {
   }
 }
 
-final activeAdminRoleProvider = StateProvider<AdminRole>((ref) => AdminRole.superAdmin);
+final activeAdminRoleProvider =
+    StateProvider<AdminRole>((ref) => AdminRole.superAdmin);
 
 final aiPulseFeedProvider = Provider<List<String>>((ref) {
   return const [
@@ -266,7 +267,8 @@ final managedUsersProvider = StateProvider<List<ManagedUser>>((ref) {
   ];
 });
 
-final marketplaceApplicantsProvider = StateProvider<List<MarketplaceApplicant>>((ref) {
+final marketplaceApplicantsProvider =
+    StateProvider<List<MarketplaceApplicant>>((ref) {
   return const [
     MarketplaceApplicant(
       id: 'mkt1',
@@ -310,11 +312,14 @@ final adSubmissionProvider = StateProvider<List<AdSubmission>>((ref) {
   ];
 });
 
-final blacklistedPhonesProvider = StateProvider<Set<String>>((ref) => <String>{});
-final blacklistedDevicesProvider = StateProvider<Set<String>>((ref) => <String>{});
+final blacklistedPhonesProvider =
+    StateProvider<Set<String>>((ref) => <String>{});
+final blacklistedDevicesProvider =
+    StateProvider<Set<String>>((ref) => <String>{});
 final adminCommandErrorProvider = StateProvider<String?>((ref) => null);
 
-final immutableTransparencyLogProvider = StateProvider<List<ImmutableLogEntry>>((ref) {
+final immutableTransparencyLogProvider =
+    StateProvider<List<ImmutableLogEntry>>((ref) {
   return const [
     ImmutableLogEntry(
       timestamp: '2026-03-17T09:30:12Z',
@@ -406,7 +411,12 @@ final registrationVelocityProvider = Provider<List<String>>((ref) {
 final globalOnlineHeatmapProvider = Provider<List<Map<String, Object>>>((ref) {
   return const [
     {'country': 'Nigeria', 'state': 'Lagos', 'lga': 'Ikeja', 'online': 182},
-    {'country': 'Ghana', 'state': 'Greater Accra', 'lga': 'Accra Metro', 'online': 126},
+    {
+      'country': 'Ghana',
+      'state': 'Greater Accra',
+      'lga': 'Accra Metro',
+      'online': 126
+    },
     {'country': 'Kenya', 'state': 'Nairobi', 'lga': 'Westlands', 'online': 74},
     {'country': 'USA', 'state': 'Utah', 'lga': 'Salt Lake City', 'online': 63},
   ];
@@ -483,8 +493,8 @@ final vaultUsersProvider = Provider<List<VaultUserMetadata>>((ref) {
   ];
 });
 
-final selectedAdminQueryPresetProvider =
-    StateProvider<AdminQueryPreset>((ref) => AdminQueryPreset.singleFemalesLagosFinalYear);
+final selectedAdminQueryPresetProvider = StateProvider<AdminQueryPreset>(
+    (ref) => AdminQueryPreset.singleFemalesLagosFinalYear);
 
 final advancedSearchResultsProvider = Provider<List<VaultUserMetadata>>((ref) {
   final users = ref.watch(vaultUsersProvider);
@@ -507,7 +517,10 @@ final advancedSearchResultsProvider = Provider<List<VaultUserMetadata>>((ref) {
           .toList(growable: false);
     case AdminQueryPreset.electriciansIkejaAa:
       return users
-          .where((u) => u.talent == 'Electrician' && u.lga == 'Ikeja' && u.genotype == 'AA')
+          .where((u) =>
+              u.talent == 'Electrician' &&
+              u.lga == 'Ikeja' &&
+              u.genotype == 'AA')
           .toList(growable: false);
   }
 });
@@ -522,11 +535,16 @@ final genotypePrivacyAlertsProvider = Provider<List<String>>((ref) {
 final highBlockRiskListProvider = Provider<List<Map<String, Object>>>((ref) {
   return const [
     {'userId': 'u1003', 'displayName': 'Friend Leo', 'blocksLast24h': 53},
-    {'userId': 'u2188', 'displayName': 'Unknown Seeker Account', 'blocksLast24h': 31},
+    {
+      'userId': 'u2188',
+      'displayName': 'Unknown Seeker Account',
+      'blocksLast24h': 31
+    },
   ];
 });
 
-final marketplaceRevenueByCategoryProvider = Provider<List<Map<String, Object>>>((ref) {
+final marketplaceRevenueByCategoryProvider =
+    Provider<List<Map<String, Object>>>((ref) {
   return const [
     {'category': 'Electricians', 'revenueUsd': 1240},
     {'category': 'Teachers', 'revenueUsd': 940},
@@ -534,9 +552,14 @@ final marketplaceRevenueByCategoryProvider = Provider<List<Map<String, Object>>>
   ];
 });
 
-final birthdayAutomationQueueProvider = Provider<List<Map<String, String>>>((ref) {
+final birthdayAutomationQueueProvider =
+    Provider<List<Map<String, String>>>((ref) {
   return const [
-    {'date': '2026-03-18', 'name': 'Sister Mercy', 'status': 'Authorized Wish Scheduled'},
+    {
+      'date': '2026-03-18',
+      'name': 'Sister Mercy',
+      'status': 'Authorized Wish Scheduled'
+    },
     {'date': '2026-03-19', 'name': 'Brother Adam', 'status': 'Queued'},
     {'date': '2026-03-20', 'name': 'Sister Ruth', 'status': 'Queued'},
   ];
@@ -557,9 +580,11 @@ class AdminCommandController {
             permission == 'marketplace_approve' ||
             permission == 'ad_review';
       case AdminRole.financialClerk:
-        return permission == 'marketplace_approve' || permission == 'payment_view';
+        return permission == 'marketplace_approve' ||
+            permission == 'payment_view';
       case AdminRole.serviceMissionaryAdmin:
-        return permission == 'mission_peer_groups' || permission == 'birthday_wishes';
+        return permission == 'mission_peer_groups' ||
+            permission == 'birthday_wishes';
     }
   }
 
@@ -584,7 +609,8 @@ class AdminCommandController {
     }
   }
 
-  Future<void> _withBackendPersistence(Future<void> Function(String adminUserId, dynamic gateway) task) async {
+  Future<void> _withBackendPersistence(
+      Future<void> Function(String adminUserId, dynamic gateway) task) async {
     final gateway = _ref.read(backendGatewayProvider);
     final adminUserId = _ref.read(backendUserIdProvider);
     try {
@@ -634,9 +660,14 @@ class AdminCommandController {
       );
     });
 
-    users[index] = users[index].copyWith(isSuspended: true, suspensionHours: hours);
+    users[index] =
+        users[index].copyWith(isSuspended: true, suspensionHours: hours);
     _ref.read(managedUsersProvider.notifier).state = users;
-    _appendLog(actor: role.name, action: 'USER_SUSPENDED', target: users[index].displayName, disciplineStep: 'Suspension ${hours}h');
+    _appendLog(
+        actor: role.name,
+        action: 'USER_SUSPENDED',
+        target: users[index].displayName,
+        disciplineStep: 'Suspension ${hours}h');
   }
 
   Future<void> shadowBanUser({required String userId}) async {
@@ -648,12 +679,19 @@ class AdminCommandController {
     if (index == -1) return;
 
     await _withBackendPersistence((adminUserId, gateway) {
-      return gateway.adminShadowBanUser(adminUserId: adminUserId, userId: userId, reason: 'Troll mitigation policy');
+      return gateway.adminShadowBanUser(
+          adminUserId: adminUserId,
+          userId: userId,
+          reason: 'Troll mitigation policy');
     });
 
     users[index] = users[index].copyWith(isShadowBanned: true);
     _ref.read(managedUsersProvider.notifier).state = users;
-    _appendLog(actor: role.name, action: 'USER_SHADOW_BANNED', target: users[index].displayName, disciplineStep: 'Shadow Ban');
+    _appendLog(
+        actor: role.name,
+        action: 'USER_SHADOW_BANNED',
+        target: users[index].displayName,
+        disciplineStep: 'Shadow Ban');
   }
 
   Future<void> deleteBanUser({required String userId}) async {
@@ -677,9 +715,19 @@ class AdminCommandController {
 
     users[index] = users[index].copyWith(isDeletedBanned: true);
     _ref.read(managedUsersProvider.notifier).state = users;
-    _ref.read(blacklistedPhonesProvider.notifier).state = {..._ref.read(blacklistedPhonesProvider), target.phone};
-    _ref.read(blacklistedDevicesProvider.notifier).state = {..._ref.read(blacklistedDevicesProvider), target.deviceId};
-    _appendLog(actor: role.name, action: 'USER_DELETE_BANNED', target: target.displayName, disciplineStep: 'Permanent Ban');
+    _ref.read(blacklistedPhonesProvider.notifier).state = {
+      ..._ref.read(blacklistedPhonesProvider),
+      target.phone
+    };
+    _ref.read(blacklistedDevicesProvider.notifier).state = {
+      ..._ref.read(blacklistedDevicesProvider),
+      target.deviceId
+    };
+    _appendLog(
+        actor: role.name,
+        action: 'USER_DELETE_BANNED',
+        target: target.displayName,
+        disciplineStep: 'Permanent Ban');
   }
 
   Future<void> approveMarketplace(String applicantId) async {
@@ -700,10 +748,15 @@ class AdminCommandController {
 
     list[index] = list[index].copyWith(approved: true);
     _ref.read(marketplaceApplicantsProvider.notifier).state = list;
-    _appendLog(actor: role.name, action: 'MARKETPLACE_APPROVED', target: list[index].displayName, disciplineStep: 'Marketplace Approval');
+    _appendLog(
+        actor: role.name,
+        action: 'MARKETPLACE_APPROVED',
+        target: list[index].displayName,
+        disciplineStep: 'Marketplace Approval');
   }
 
-  Future<void> grantMeritAccess({required String applicantId, required String reason}) async {
+  Future<void> grantMeritAccess(
+      {required String applicantId, required String reason}) async {
     final role = _ref.read(activeAdminRoleProvider);
     if (role != AdminRole.superAdmin && role != AdminRole.moderator) return;
 
@@ -722,7 +775,11 @@ class AdminCommandController {
 
     list[index] = list[index].copyWith(approved: true, meritGranted: true);
     _ref.read(marketplaceApplicantsProvider.notifier).state = list;
-    _appendLog(actor: role.name, action: 'MERIT_ACCESS_GRANTED', target: '${list[index].displayName} · Reason: $reason', disciplineStep: 'Merit Add');
+    _appendLog(
+        actor: role.name,
+        action: 'MERIT_ACCESS_GRANTED',
+        target: '${list[index].displayName} · Reason: $reason',
+        disciplineStep: 'Merit Add');
   }
 
   Future<void> featureTalent(String talentId) async {
@@ -744,10 +801,15 @@ class AdminCommandController {
 
     list[index] = list[index].copyWith(isFeatured: nextFeatured);
     _ref.read(talentTieringProvider.notifier).state = list;
-    _appendLog(actor: role.name, action: nextFeatured ? 'TALENT_FEATURED' : 'TALENT_UNFEATURED', target: list[index].displayName, disciplineStep: 'Talent Tiering');
+    _appendLog(
+        actor: role.name,
+        action: nextFeatured ? 'TALENT_FEATURED' : 'TALENT_UNFEATURED',
+        target: list[index].displayName,
+        disciplineStep: 'Talent Tiering');
   }
 
-  Future<void> moderateAd({required String adId, required bool approved}) async {
+  Future<void> moderateAd(
+      {required String adId, required bool approved}) async {
     final role = _ref.read(activeAdminRoleProvider);
     if (!_can(role, 'ad_review')) return;
 
@@ -765,9 +827,16 @@ class AdminCommandController {
       );
     });
 
-    ads[index] = ads[index].copyWith(status: approved ? AdModerationStatus.approved : AdModerationStatus.rejected);
+    ads[index] = ads[index].copyWith(
+        status: approved
+            ? AdModerationStatus.approved
+            : AdModerationStatus.rejected);
     _ref.read(adSubmissionProvider.notifier).state = ads;
-    _appendLog(actor: role.name, action: approved ? 'AD_APPROVED' : 'AD_REJECTED', target: ads[index].title, disciplineStep: 'Ad Moderation');
+    _appendLog(
+        actor: role.name,
+        action: approved ? 'AD_APPROVED' : 'AD_REJECTED',
+        target: ads[index].title,
+        disciplineStep: 'Ad Moderation');
   }
 }
 

@@ -34,11 +34,13 @@ class MarketingLandingScreen extends StatelessWidget {
                       const Expanded(
                         child: Text(
                           'GPG Gathering Place Global',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 18),
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed('/about'),
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/about'),
                         child: const Text('About'),
                       ),
                     ],
@@ -47,22 +49,27 @@ class MarketingLandingScreen extends StatelessWidget {
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+                    alignment:
+                        compact ? WrapAlignment.start : WrapAlignment.end,
                     children: [
                       FilledButton.tonal(
-                        onPressed: () => Navigator.of(context).pushNamed('/signin-user'),
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/signin-user'),
                         child: const Text('Sign In User'),
                       ),
                       FilledButton.tonal(
-                        onPressed: () => Navigator.of(context).pushNamed('/signup-user'),
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/signup-user'),
                         child: const Text('Sign Up User'),
                       ),
                       FilledButton.tonal(
-                        onPressed: () => Navigator.of(context).pushNamed('/signin-moderator'),
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/signin-moderator'),
                         child: const Text('Sign In Moderator'),
                       ),
                       FilledButton.tonal(
-                        onPressed: () => Navigator.of(context).pushNamed('/signup-moderator'),
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/signup-moderator'),
                         child: const Text('Sign Up Moderator'),
                       ),
                     ],
@@ -103,7 +110,10 @@ class MarketingLandingScreen extends StatelessWidget {
                         const Text(
                           'GPG connects Members, Friends, and Seekers through wholesome reels, encrypted chat, and a trusted talent marketplace with local gathering-place leadership.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: AppColors.textMuted, height: 1.5),
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textMuted,
+                              height: 1.5),
                         ),
                         const SizedBox(height: 16),
                         Wrap(
@@ -120,9 +130,8 @@ class MarketingLandingScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
             ),
             const Divider(height: 1),
             Padding(
@@ -133,7 +142,8 @@ class MarketingLandingScreen extends StatelessWidget {
                 alignment: WrapAlignment.center,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.of(context).pushNamed('/signin-admin'),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed('/signin-admin'),
                     child: const Text('Admin'),
                   ),
                   TextButton(
@@ -141,7 +151,8 @@ class MarketingLandingScreen extends StatelessWidget {
                     child: const Text('Terms'),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.of(context).pushNamed('/privacy'),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed('/privacy'),
                     child: const Text('Privacy'),
                   ),
                   TextButton(
