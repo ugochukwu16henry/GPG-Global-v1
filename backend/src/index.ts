@@ -12,6 +12,7 @@ import { prisma } from './lib/prisma.js';
 import { neo4jDriver } from './lib/neo4j.js';
 import { gatheringService } from './services/gatheringService.js';
 import { sessionService } from './services/sessionService.js';
+import { storageService } from './services/storageService.js';
 
 const app = express();
 
@@ -58,6 +59,7 @@ const httpServer = createServer(app);
 createSocketServer(httpServer);
 
 await gatheringService.ensureGlobalCommunity();
+await storageService.ensureBucketsExist();
 
 httpServer.listen(env.PORT, () => {
   console.log(`GPG Backend listening on :${env.PORT}`);

@@ -11,6 +11,7 @@ import { gatheringService } from '../services/gatheringService.js';
 import { safetyService } from '../services/safetyService.js';
 import { sessionService } from '../services/sessionService.js';
 import { moderatorInviteService } from '../services/moderatorInviteService.js';
+import { storageService, BucketName } from '../services/storageService.js';
 
 export const typeDefs = `
   enum PathwayStatus {
@@ -446,6 +447,25 @@ export const typeDefs = `
     ): Boolean!
 
     sendChatMessage(senderUserId: ID!, roomId: String!, body: String!): ChatResult!
+
+    # Storage — signed URLs for direct client uploads/downloads
+    requestUploadUrl(userId: ID!, bucket: StorageBucket!, fileName: String!): UploadUrlResult!
+    requestDownloadUrl(userId: ID!, bucket: StorageBucket!, path: String!): String!
+    deleteStorageFile(userId: ID!, bucket: StorageBucket!, path: String!): Boolean!
+  }
+
+  # ─── Storage ───────────────────────────────────────────────────────────────
+
+  enum StorageBucket {
+    avatars
+    media
+    documents
+  }
+
+  type UploadUrlResult {
+    signedUrl: String!
+    token: String!
+    path: String!
   }
 `;
 
@@ -1159,6 +1179,42 @@ export const resolvers = {
         messageId: result.message.id,
         redFlag: result.redFlag
       };
-    }
+    },
+
+    // ── Storage ──────────────────────────────────────────────────────────────
+    requestUploadUrl: async (
+      _: unknown,
+      args: { userId: string; bucket: BucketName; fileName: string },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
+      // Build a safe path: users/<userId>/<timestamp>_<sanitisedFileName>
+      const safeName = args.fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+      const path = `users/${args.userId}/${Date.now()}_${safeName}`;
+      return storageService.createUploadUrl(args.bucket, path);
+    },
+
+    requestDownloadUrl: async (
+      _: unknown,
+      args: { userId: string; bucket: BucketName; path: string },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
+      return storageService.createDownloadUrl(args.bucket, args.path);
+    },
+
+    deleteStorageFile: async (
+      _: unknown,
+      args: { userId: string; bucket: BucketName; path: string },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['moderator', 'admin']);
+      // Only allow deletion of paths owned by the requesting user (unless admin)
+      if (context.role !== 'admin' && !args.path.startsWith(`users/${args.userId}/`)) {
+        throw new Error('You can only delete your own files.');
+      }
+      await storageService.deleteFile(args.bucket, args.path);
+      return true;
+    },
   }
 };
