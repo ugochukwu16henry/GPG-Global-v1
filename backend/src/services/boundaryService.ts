@@ -178,8 +178,8 @@ export const boundaryService = {
       },
     });
 
-    final ids = <String>{};
-    for (final row in relations) {
+    const ids = new Set<string>();
+    for (const row of relations) {
       if (row.blockerId == viewerId) {
         ids.add(row.blockedId);
       } else if (row.blockedId == viewerId) {

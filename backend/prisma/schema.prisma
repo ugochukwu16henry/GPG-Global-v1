@@ -181,6 +181,7 @@ model Mission {
   createdAt     DateTime @default(now())
 
   users         User[]
+  alumniRecords MissionAlumni[]
 }
 
 model AuthOtp {

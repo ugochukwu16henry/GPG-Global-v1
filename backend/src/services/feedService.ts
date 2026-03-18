@@ -117,19 +117,19 @@ export const feedService = {
   },
 
   async feed(limit: number, viewerUserId?: string) {
-    final blockedIds = viewerUserId == null
-        ? <String>{}
-        : await boundaryService.blockedUserIdsForViewer(viewerUserId);
+    const blockedIds = viewerUserId == null
+      ? new Set<string>()
+      : await boundaryService.blockedUserIdsForViewer(viewerUserId);
 
-    final rows = await prisma.post.findMany({
+    const rows = await prisma.post.findMany({
       take: limit,
       where: {
         isHiddenPendingReview: false,
         copyrightBlocked: false,
-        authorUserId: blockedIds.isEmpty
+        authorUserId: blockedIds.size == 0
             ? undefined
             : {
-                notIn: blockedIds.toList(),
+                notIn: Array.from(blockedIds),
               },
       },
       orderBy: { createdAt: 'desc' },
@@ -156,19 +156,14 @@ export const feedService = {
       },
     });
 
-    if (blockedIds.isEmpty) {
+    if (blockedIds.size == 0) {
       return rows;
     }
 
     return rows
-        .map(
-          (post) => {
-            ...post,
-            'comments': post.comments
-                .where((comment) => !blockedIds.contains(comment.userId))
-                .toList(),
-          },
-        )
-        .toList(growable: false);
+      .map((post) => ({
+        ...post,
+        comments: post.comments.filter((comment) => !blockedIds.has(comment.userId)),
+      }));
   },
 };
