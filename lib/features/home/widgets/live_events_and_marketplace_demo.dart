@@ -34,6 +34,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
     final messageController = TextEditingController();
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
@@ -75,7 +76,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 52,
+                height: isCompact ? 64 : 52,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: liveEvents.length,
@@ -115,11 +116,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                             ),
                             const SizedBox(width: 6),
                           ],
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              // Keep chips readable but avoid overflow on very small screens.
-                              maxWidth: screenWidth * 0.55,
-                            ),
+                          Flexible(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
@@ -127,76 +124,78 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                 Text(
                                   event.message,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    height: 1,
+                                    fontSize: isCompact ? 10 : 11,
+                                    height: 1.1,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textOnSurface,
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
                                   event.timestampLabel,
                                   style: TextStyle(
                                     fontSize: 9,
-                                    height: 1,
+                                    height: 1.1,
                                     color: AppColors.textMuted,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          InkWell(
-                            onTap: () => sonicIdentity.preview(toneType),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.volume_up_rounded,
+                          if (!isCompact) ...[
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () => sonicIdentity.preview(toneType),
+                              borderRadius: BorderRadius.circular(10),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.volume_up_rounded,
+                                  size: 14,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              icon: Icon(
+                                Icons.more_horiz,
                                 size: 14,
                                 color: color,
                               ),
+                              onSelected: (value) async {
+                                final controller = ref.read(boundaryControllerProvider.notifier);
+                                if (value == 'block') {
+                                  await controller.blockUser(
+                                    blockedId: event.id,
+                                    reasonCode: 'HARASSMENT',
+                                  );
+                                } else if (value == 'mute') {
+                                  await controller.muteUser(mutedId: event.id);
+                                } else if (value == 'report') {
+                                  await controller.reportUser(
+                                    reportedId: event.id,
+                                    reasonCode: 'HARASSMENT',
+                                    detail: 'Reported from live event menu',
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'block',
+                                  child: Text('Block User'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'mute',
+                                  child: Text('Mute User'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'report',
+                                  child: Text('Report User'),
+                                ),
+                              ],
                             ),
-                          ),
-                          PopupMenuButton<String>(
-                            icon: Icon(
-                              Icons.more_horiz,
-                              size: 14,
-                              color: color,
-                            ),
-                            onSelected: (value) async {
-                              final controller = ref.read(boundaryControllerProvider.notifier);
-                              if (value == 'block') {
-                                await controller.blockUser(
-                                  blockedId: event.id,
-                                  reasonCode: 'HARASSMENT',
-                                );
-                              } else if (value == 'mute') {
-                                await controller.muteUser(mutedId: event.id);
-                              } else if (value == 'report') {
-                                await controller.reportUser(
-                                  reportedId: event.id,
-                                  reasonCode: 'HARASSMENT',
-                                  detail: 'Reported from live event menu',
-                                );
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'block',
-                                child: Text('Block User'),
-                              ),
-                              PopupMenuItem(
-                                value: 'mute',
-                                child: Text('Mute User'),
-                              ),
-                              PopupMenuItem(
-                                value: 'report',
-                                child: Text('Report User'),
-                              ),
-                            ],
-                          ),
+                          ],
                         ],
                       ),
                     );
@@ -326,103 +325,208 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                     .map(
                       (listing) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryNavy.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.work_rounded,
-                                size: 16,
-                                color: AppColors.primaryNavy,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
+                        child: isCompact
+                            ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    listing.title,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textOnSurface,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.work_rounded,
+                                          size: 16,
+                                          color: AppColors.primaryNavy,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              listing.title,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textOnSurface,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${listing.category} · ${listing.location}',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textMuted,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    '${listing.category} · ${listing.location}',
-                                    style: TextStyle(
-                                      fontSize: 11,
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const MeritBadge(),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(
+                                          Icons.more_horiz,
+                                          size: 16,
+                                          color: AppColors.textMuted,
+                                        ),
+                                        onSelected: (value) async {
+                                          final controller = ref.read(boundaryControllerProvider.notifier);
+                                          if (value == 'success') {
+                                            Navigator.of(context).pushNamed(
+                                              '/marketplace-success',
+                                              arguments: MarketplaceSuccessPayload(
+                                                name: 'Brother Samuel',
+                                                skillName: listing.title,
+                                                location: listing.location,
+                                                listingId: listing.id,
+                                              ),
+                                            );
+                                          } else if (value == 'block') {
+                                            await controller.blockUser(
+                                              blockedId: listing.id,
+                                              reasonCode: 'HARASSMENT',
+                                            );
+                                          } else if (value == 'mute') {
+                                            await controller.muteUser(mutedId: listing.id);
+                                          } else if (value == 'report') {
+                                            await controller.reportUser(
+                                              reportedId: listing.id,
+                                              reasonCode: 'SCAM',
+                                              detail: 'Reported from marketplace row menu',
+                                            );
+                                          }
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem(
+                                            value: 'success',
+                                            child: Text('Open Success Preview'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'block',
+                                            child: Text('Block User'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'mute',
+                                            child: Text('Mute User'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'report',
+                                            child: Text('Report User'),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.work_rounded,
+                                      size: 16,
+                                      color: AppColors.primaryNavy,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          listing.title,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textOnSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          '${listing.category} · ${listing.location}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const MeritBadge(),
+                                  const SizedBox(width: 4),
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(
+                                      Icons.more_horiz,
+                                      size: 16,
                                       color: AppColors.textMuted,
                                     ),
+                                    onSelected: (value) async {
+                                      final controller = ref.read(boundaryControllerProvider.notifier);
+                                      if (value == 'success') {
+                                        Navigator.of(context).pushNamed(
+                                          '/marketplace-success',
+                                          arguments: MarketplaceSuccessPayload(
+                                            name: 'Brother Samuel',
+                                            skillName: listing.title,
+                                            location: listing.location,
+                                            listingId: listing.id,
+                                          ),
+                                        );
+                                      } else if (value == 'block') {
+                                        await controller.blockUser(
+                                          blockedId: listing.id,
+                                          reasonCode: 'HARASSMENT',
+                                        );
+                                      } else if (value == 'mute') {
+                                        await controller.muteUser(mutedId: listing.id);
+                                      } else if (value == 'report') {
+                                        await controller.reportUser(
+                                          reportedId: listing.id,
+                                          reasonCode: 'SCAM',
+                                          detail: 'Reported from marketplace row menu',
+                                        );
+                                      }
+                                    },
+                                    itemBuilder: (context) => const [
+                                      PopupMenuItem(
+                                        value: 'success',
+                                        child: Text('Open Success Preview'),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'block',
+                                        child: Text('Block User'),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'mute',
+                                        child: Text('Mute User'),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'report',
+                                        child: Text('Report User'),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const MeritBadge(),
-                            const SizedBox(width: 4),
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_horiz,
-                                size: 16,
-                                color: AppColors.textMuted,
-                              ),
-                              onSelected: (value) async {
-                                final controller = ref.read(boundaryControllerProvider.notifier);
-                                if (value == 'success') {
-                                  Navigator.of(context).pushNamed(
-                                    '/marketplace-success',
-                                    arguments: MarketplaceSuccessPayload(
-                                      name: 'Brother Samuel',
-                                      skillName: listing.title,
-                                      location: listing.location,
-                                      listingId: listing.id,
-                                    ),
-                                  );
-                                } else if (value == 'block') {
-                                  await controller.blockUser(
-                                    blockedId: listing.id,
-                                    reasonCode: 'HARASSMENT',
-                                  );
-                                } else if (value == 'mute') {
-                                  await controller.muteUser(mutedId: listing.id);
-                                } else if (value == 'report') {
-                                  await controller.reportUser(
-                                    reportedId: listing.id,
-                                    reasonCode: 'SCAM',
-                                    detail: 'Reported from marketplace row menu',
-                                  );
-                                }
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'success',
-                                  child: Text('Open Success Preview'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'block',
-                                  child: Text('Block User'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'mute',
-                                  child: Text('Mute User'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'report',
-                                  child: Text('Report User'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
                       ),
                     )
                     .toList(),
