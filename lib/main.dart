@@ -34,13 +34,15 @@ class GpgGlobalApp extends ConsumerWidget {
         settings: settings,
         builder: (_) => const SimpleInfoScreen(
           title: 'Access Restricted',
-          body: 'This area is restricted to another role. Please sign in with the correct account type.',
+          body:
+              'This area is restricted to another role. Please sign in with the correct account type.',
         ),
       );
     }
 
     if (uri.path == '/') {
-      return MaterialPageRoute(builder: (_) => const MarketingLandingScreen(), settings: settings);
+      return MaterialPageRoute(
+          builder: (_) => const MarketingLandingScreen(), settings: settings);
     }
 
     if (uri.path == '/signin-user') {
@@ -59,14 +61,16 @@ class GpgGlobalApp extends ConsumerWidget {
 
     if (uri.path == '/signin-moderator') {
       return MaterialPageRoute(
-        builder: (_) => const AuthEntryScreen(mode: AuthEntryMode.moderatorSignIn),
+        builder: (_) =>
+            const AuthEntryScreen(mode: AuthEntryMode.moderatorSignIn),
         settings: settings,
       );
     }
 
     if (uri.path == '/signup-moderator') {
       return MaterialPageRoute(
-        builder: (_) => const AuthEntryScreen(mode: AuthEntryMode.moderatorSignUp),
+        builder: (_) =>
+            const AuthEntryScreen(mode: AuthEntryMode.moderatorSignUp),
         settings: settings,
       );
     }
@@ -94,7 +98,8 @@ class GpgGlobalApp extends ConsumerWidget {
         settings: settings,
         builder: (_) => const SimpleInfoScreen(
           title: 'Terms',
-          body: 'Use of the platform requires wholesome conduct and respect for community standards.',
+          body:
+              'Use of the platform requires wholesome conduct and respect for community standards.',
         ),
       );
     }
@@ -125,25 +130,29 @@ class GpgGlobalApp extends ConsumerWidget {
       if (session.role != AppRole.user) {
         return denyAccess();
       }
-      return MaterialPageRoute(builder: (_) => const UserAppShellScreen(), settings: settings);
+      return MaterialPageRoute(
+          builder: (_) => const UserAppShellScreen(), settings: settings);
     }
 
     if (uri.path == '/moderator-dashboard') {
       if (session.role != AppRole.moderator) {
         return denyAccess();
       }
-      return MaterialPageRoute(builder: (_) => const ModeratorDashboardScreen(), settings: settings);
+      return MaterialPageRoute(
+          builder: (_) => const ModeratorDashboardScreen(), settings: settings);
     }
 
     if (uri.path == '/admin-dashboard') {
       if (session.role != AppRole.admin) {
         return denyAccess();
       }
-      return MaterialPageRoute(builder: (_) => const AdminCommandCenterScreen(), settings: settings);
+      return MaterialPageRoute(
+          builder: (_) => const AdminCommandCenterScreen(), settings: settings);
     }
 
     if (uri.path == '/app-flow-map') {
-      return MaterialPageRoute(builder: (_) => const AppFlowLogicMapScreen(), settings: settings);
+      return MaterialPageRoute(
+          builder: (_) => const AppFlowLogicMapScreen(), settings: settings);
     }
 
     if (uri.path == '/marketplace-success') {
@@ -167,7 +176,8 @@ class GpgGlobalApp extends ConsumerWidget {
         builder: (_) => DeepLinkTargetScreen(
           title: 'Talent Listing',
           id: segments[1],
-          description: 'Opened via deep link directly to a specific talent listing.',
+          description:
+              'Opened via deep link directly to a specific talent listing.',
         ),
         settings: settings,
       );
@@ -178,13 +188,15 @@ class GpgGlobalApp extends ConsumerWidget {
         builder: (_) => DeepLinkTargetScreen(
           title: 'Mission Group',
           id: segments[1],
-          description: 'Opened via deep link directly to a mission group context.',
+          description:
+              'Opened via deep link directly to a mission group context.',
         ),
         settings: settings,
       );
     }
 
-    return MaterialPageRoute(builder: (_) => const MarketingLandingScreen(), settings: settings);
+    return MaterialPageRoute(
+        builder: (_) => const MarketingLandingScreen(), settings: settings);
   }
 
   @override
@@ -194,7 +206,7 @@ class GpgGlobalApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       onGenerateRoute: (settings) => _onGenerateRoute(settings, ref),
       initialRoute: '/',
     );
