@@ -24,5 +24,9 @@ fi
 export PATH="$FLUTTER_DIR/bin:$PATH"
 export PUB_CACHE="$HOME/.pub-cache"
 
+# Configure git to trust Flutter directory (pub may invoke git during dependency resolution)
+git config --global --add safe.directory "$FLUTTER_DIR"
+git config --global --add safe.directory /vercel/flutter
+
 flutter config --no-analytics --enable-web
 flutter pub get
