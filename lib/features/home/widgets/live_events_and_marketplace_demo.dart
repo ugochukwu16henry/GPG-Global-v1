@@ -16,7 +16,8 @@ import 'glass_card.dart';
 class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
   const LiveEventsAndMarketplaceDemo({super.key});
 
-  Future<void> _launchCheckout(BuildContext context, String? checkoutUrl) async {
+  Future<void> _launchCheckout(
+      BuildContext context, String? checkoutUrl) async {
     if (checkoutUrl == null || checkoutUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Checkout URL not available yet.')),
@@ -24,7 +25,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
       return;
     }
     final uri = Uri.tryParse(checkoutUrl);
-    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open checkout URL.')),
       );
@@ -99,7 +101,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                       _ => GpgToneType.missionPeerFound,
                     };
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
@@ -164,7 +167,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                 color: color,
                               ),
                               onSelected: (value) async {
-                                final controller = ref.read(boundaryControllerProvider.notifier);
+                                final controller = ref
+                                    .read(boundaryControllerProvider.notifier);
                                 if (value == 'block') {
                                   await controller.blockUser(
                                     blockedId: event.id,
@@ -212,8 +216,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 6,
+                runSpacing: 6,
                 children: [
                   FilledButton.tonal(
                     onPressed: backendState.isLoading
@@ -221,7 +225,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                         : () => ref
                             .read(backendDemoControllerProvider.notifier)
                             .runMissionSearch('Lagos'),
-                    child: const Text('Mission Search (Lagos)'),
+                    child: Text(
+                        isCompact ? 'Mission Srch' : 'Mission Search (Lagos)'),
                   ),
                   FilledButton.tonal(
                     onPressed: backendState.isLoading
@@ -229,11 +234,13 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                         : () => ref
                             .read(backendDemoControllerProvider.notifier)
                             .createCheckout(),
-                    child: const Text('Create \$2 Checkout'),
+                    child: Text(
+                        isCompact ? '\$2 Checkout' : 'Create \$2 Checkout'),
                   ),
                   FilledButton.tonal(
-                    onPressed: () => _launchCheckout(context, backendState.checkoutUrl),
-                    child: const Text('Open Checkout'),
+                    onPressed: () =>
+                        _launchCheckout(context, backendState.checkoutUrl),
+                    child: Text(isCompact ? 'Open' : 'Open Checkout'),
                   ),
                   FilledButton.tonal(
                     onPressed: backendState.isLoading
@@ -241,7 +248,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                         : () => ref
                             .read(backendDemoControllerProvider.notifier)
                             .sendModerationProbe(),
-                    child: const Text('Send Moderation Probe'),
+                    child: Text(
+                        isCompact ? 'Moderation' : 'Send Moderation Probe'),
                   ),
                 ],
               ),
@@ -256,7 +264,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   backendState.peerMatchSummary!,
-                  style: TextStyle(fontSize: 10, color: AppColors.stewardshipGreen),
+                  style: TextStyle(
+                      fontSize: 10, color: AppColors.stewardshipGreen),
                 ),
               ],
               if (backendState.moderationResult != null) ...[
@@ -265,9 +274,10 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                   'Guardrail result: ${backendState.moderationResult}',
                   style: TextStyle(
                     fontSize: 10,
-                    color: backendState.moderationResult!.contains('No violation')
-                        ? AppColors.stewardshipGreen
-                        : AppColors.warmCrimson,
+                    color:
+                        backendState.moderationResult!.contains('No violation')
+                            ? AppColors.stewardshipGreen
+                            : AppColors.warmCrimson,
                   ),
                 ),
               ],
@@ -283,14 +293,16 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     'Control Room alert: $value',
-                    style: TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+                    style:
+                        TextStyle(fontSize: 10, color: AppColors.warmCrimson),
                   ),
                 ),
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 8),
-              _chatGuardianComposer(context, ref, messageController, guardian),
+              _chatGuardianComposer(
+                  context, ref, messageController, guardian, isCompact),
             ],
           ),
         ),
@@ -313,10 +325,22 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  _buildFilterChip(ref, label: 'All', value: null, selected: selectedCategory == null),
-                  _buildFilterChip(ref, label: 'Tech', value: 'Tech', selected: selectedCategory == 'Tech'),
-                  _buildFilterChip(ref, label: 'Tutoring', value: 'Tutoring', selected: selectedCategory == 'Tutoring'),
-                  _buildFilterChip(ref, label: 'Creative', value: 'Creative', selected: selectedCategory == 'Creative'),
+                  _buildFilterChip(ref,
+                      label: 'All',
+                      value: null,
+                      selected: selectedCategory == null),
+                  _buildFilterChip(ref,
+                      label: 'Tech',
+                      value: 'Tech',
+                      selected: selectedCategory == 'Tech'),
+                  _buildFilterChip(ref,
+                      label: 'Tutoring',
+                      value: 'Tutoring',
+                      selected: selectedCategory == 'Tutoring'),
+                  _buildFilterChip(ref,
+                      label: 'Creative',
+                      value: 'Creative',
+                      selected: selectedCategory == 'Creative'),
                 ],
               ),
               const SizedBox(height: 8),
@@ -335,8 +359,10 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                         width: 28,
                                         height: 28,
                                         decoration: BoxDecoration(
-                                          color: AppColors.primaryNavy.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: AppColors.primaryNavy
+                                              .withValues(alpha: 0.08),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: const Icon(
                                           Icons.work_rounded,
@@ -347,7 +373,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               listing.title,
@@ -371,7 +398,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                   ),
                                   const SizedBox(height: 6),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       const MeritBadge(),
                                       PopupMenuButton<String>(
@@ -381,11 +409,14 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                           color: AppColors.textMuted,
                                         ),
                                         onSelected: (value) async {
-                                          final controller = ref.read(boundaryControllerProvider.notifier);
+                                          final controller = ref.read(
+                                              boundaryControllerProvider
+                                                  .notifier);
                                           if (value == 'success') {
                                             Navigator.of(context).pushNamed(
                                               '/marketplace-success',
-                                              arguments: MarketplaceSuccessPayload(
+                                              arguments:
+                                                  MarketplaceSuccessPayload(
                                                 name: 'Brother Samuel',
                                                 skillName: listing.title,
                                                 location: listing.location,
@@ -398,12 +429,14 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                               reasonCode: 'HARASSMENT',
                                             );
                                           } else if (value == 'mute') {
-                                            await controller.muteUser(mutedId: listing.id);
+                                            await controller.muteUser(
+                                                mutedId: listing.id);
                                           } else if (value == 'report') {
                                             await controller.reportUser(
                                               reportedId: listing.id,
                                               reasonCode: 'SCAM',
-                                              detail: 'Reported from marketplace row menu',
+                                              detail:
+                                                  'Reported from marketplace row menu',
                                             );
                                           }
                                         },
@@ -436,7 +469,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                     width: 28,
                                     height: 28,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                                      color: AppColors.primaryNavy
+                                          .withValues(alpha: 0.08),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -448,7 +482,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           listing.title,
@@ -480,7 +515,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                       color: AppColors.textMuted,
                                     ),
                                     onSelected: (value) async {
-                                      final controller = ref.read(boundaryControllerProvider.notifier);
+                                      final controller = ref.read(
+                                          boundaryControllerProvider.notifier);
                                       if (value == 'success') {
                                         Navigator.of(context).pushNamed(
                                           '/marketplace-success',
@@ -497,12 +533,14 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                                           reasonCode: 'HARASSMENT',
                                         );
                                       } else if (value == 'mute') {
-                                        await controller.muteUser(mutedId: listing.id);
+                                        await controller.muteUser(
+                                            mutedId: listing.id);
                                       } else if (value == 'report') {
                                         await controller.reportUser(
                                           reportedId: listing.id,
                                           reasonCode: 'SCAM',
-                                          detail: 'Reported from marketplace row menu',
+                                          detail:
+                                              'Reported from marketplace row menu',
                                         );
                                       }
                                     },
@@ -551,11 +589,13 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
               const SizedBox(height: 8),
               ...previewMessages.map(
                 (message) => Align(
-                  alignment:
-                      message.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: message.isMine
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     constraints: BoxConstraints(
                       // Chat bubbles should never exceed the viewport width minus padding.
                       maxWidth: screenWidth - 80,
@@ -601,19 +641,22 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                               color: AppColors.textMuted,
                             ),
                             onSelected: (value) async {
-                              final controller = ref.read(boundaryControllerProvider.notifier);
+                              final controller =
+                                  ref.read(boundaryControllerProvider.notifier);
                               if (value == 'block') {
                                 await controller.blockUser(
                                   blockedId: message.senderUserId,
                                   reasonCode: 'HARASSMENT',
                                 );
                               } else if (value == 'mute') {
-                                await controller.muteUser(mutedId: message.senderUserId);
+                                await controller.muteUser(
+                                    mutedId: message.senderUserId);
                               } else if (value == 'report') {
                                 await controller.reportUser(
                                   reportedId: message.senderUserId,
                                   reasonCode: 'HARASSMENT',
-                                  detail: 'Reported from mission peer chat bubble',
+                                  detail:
+                                      'Reported from mission peer chat bubble',
                                 );
                               }
                             },
@@ -656,6 +699,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
     WidgetRef ref,
     TextEditingController messageController,
     SilentGuardianState guardian,
+    bool isCompact,
   ) {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -676,15 +720,14 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
             minLines: 1,
             maxLines: 3,
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-              hintText: 'Type a message for local scan...'
-            ),
+                border: OutlineInputBorder(),
+                isDense: true,
+                hintText: 'Type a message for local scan...'),
           ),
           const SizedBox(height: 6),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               FilledButton.tonal(
                 onPressed: guardian.isLoading
@@ -692,7 +735,9 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                     : () async {
                         final text = messageController.text.trim();
                         if (text.isEmpty) return;
-                        final sent = await ref.read(silentGuardianControllerProvider.notifier).guardAndSend(
+                        final sent = await ref
+                            .read(silentGuardianControllerProvider.notifier)
+                            .guardAndSend(
                               roomId: 'global-ysa-room',
                               body: text,
                               userConfirmedAfterNudge: true,
@@ -701,7 +746,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                           messageController.clear();
                         }
                       },
-                child: const Text('Send with Guardian'),
+                child: Text(isCompact ? 'Send' : 'Send with Guardian'),
               ),
               FilledButton.tonal(
                 onPressed: guardian.isLoading
@@ -709,14 +754,16 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                     : () async {
                         final text = messageController.text.trim();
                         if (text.isEmpty) return;
-                        await ref.read(silentGuardianControllerProvider.notifier).reportWithFranking(
+                        await ref
+                            .read(silentGuardianControllerProvider.notifier)
+                            .reportWithFranking(
                               roomId: 'global-ysa-room',
                               reportedUserId: 'u1003',
                               conductCategory: 'DISRESPECTFUL_LANGUAGE',
                               evidenceMessage: text,
                             );
                       },
-                child: const Text('Report w/ Franking'),
+                child: Text(isCompact ? 'Report' : 'Report w/ Franking'),
               ),
             ],
           ),
@@ -736,7 +783,8 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               guardian.error!,
-              style: const TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+              style:
+                  const TextStyle(fontSize: 10, color: AppColors.warmCrimson),
             ),
           ],
         ],
@@ -774,4 +822,3 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
     );
   }
 }
-
