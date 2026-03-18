@@ -20,12 +20,10 @@ echo "→ Building Flutter web application..."
 if [ -n "${GPG_BACKEND_URL:-}" ]; then
   flutter build web --release \
     --web-renderer canvaskit \
-    --tree-shake-icons \
     --dart-define=GPG_BACKEND_URL="$GPG_BACKEND_URL"
 else
   flutter build web --release \
-    --web-renderer canvaskit \
-    --tree-shake-icons
+    --web-renderer canvaskit
 fi
 
 echo "✓ Build complete: build/web"
