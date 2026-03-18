@@ -33,6 +33,7 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final messageController = TextEditingController();
     final liveEvents = ref.watch(liveEventsProvider);
     final listings = ref.watch(filteredMarketplaceListingsProvider);
@@ -115,7 +116,10 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                             const SizedBox(width: 6),
                           ],
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 220),
+                            constraints: BoxConstraints(
+                              // Keep chips readable but avoid overflow on very small screens.
+                              maxWidth: screenWidth * 0.55,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
@@ -448,7 +452,10 @@ class LiveEventsAndMarketplaceDemo extends ConsumerWidget {
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    constraints: const BoxConstraints(maxWidth: 320),
+                    constraints: BoxConstraints(
+                      // Chat bubbles should never exceed the viewport width minus padding.
+                      maxWidth: screenWidth - 80,
+                    ),
                     decoration: BoxDecoration(
                       color: message.isMine
                           ? AppColors.primaryNavy.withValues(alpha: 0.14)
