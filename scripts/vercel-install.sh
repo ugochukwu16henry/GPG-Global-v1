@@ -2,6 +2,7 @@
 set -euo pipefail
 
 export FLUTTER_SUPPRESS_ANALYTICS=1
+export FLUTTER_ALLOW_SUPERUSER=true
 
 FLUTTER_DIR="$HOME/flutter"
 

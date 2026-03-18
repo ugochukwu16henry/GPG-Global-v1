@@ -2,6 +2,7 @@
 set -euo pipefail
 
 export FLUTTER_SUPPRESS_ANALYTICS=1
+export FLUTTER_ALLOW_SUPERUSER=true
 export PATH="$HOME/flutter/bin:$PATH"
 export PUB_CACHE="$HOME/.pub-cache"
 
@@ -15,15 +16,13 @@ flutter pub get
 echo "→ Upgrading web renderer package..."
 flutter pub upgrade web
 
-# Build with CanvasKit renderer (more stable, larger bundle but more compatible)
+# Build web app (Flutter 3.22+ removed --web-renderer)
 echo "→ Building Flutter web application..."
 if [ -n "${GPG_BACKEND_URL:-}" ]; then
   flutter build web --release \
-    --web-renderer canvaskit \
     --dart-define=GPG_BACKEND_URL="$GPG_BACKEND_URL"
 else
-  flutter build web --release \
-    --web-renderer canvaskit
+  flutter build web --release
 fi
 
 echo "✓ Build complete: build/web"
