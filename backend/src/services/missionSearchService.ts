@@ -78,15 +78,15 @@ export const missionSearchService = {
     viewerUserId?: string;
   }) {
     const blockedIds = viewerUserId == null
-        ? <String>{}
+        ? new Set<string>()
         : await boundaryService.blockedUserIdsForViewer(viewerUserId);
 
     const count = await prisma.user.count({
       where: {
-        id: blockedIds.isEmpty
+        id: blockedIds.size === 0
             ? undefined
             : {
-                notIn: blockedIds.toList(),
+                notIn: Array.from(blockedIds),
               },
         isDegree: true,
         academicFocus: {
