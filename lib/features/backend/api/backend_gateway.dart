@@ -119,6 +119,9 @@ class BackendGateway {
           academicFocus
           lga
           state
+          country
+          isMember
+          pathwayStatus
           mission {
             missionName
           }

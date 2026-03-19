@@ -180,20 +180,39 @@ final activeAdminRoleProvider =
     StateProvider<AdminRole>((ref) => AdminRole.superAdmin);
 
 final aiPulseFeedProvider = Provider<List<String>>((ref) {
-  return const [
-    'LOW: Marketplace post flagged for possible misleading pricing',
-    'MEDIUM: Group comment flagged for harassment tone',
-    'LOW: Profile ad copy flagged for policy review',
-  ];
+  final bundles = ref.watch(breakGlassDeskControllerProvider).bundles;
+  if (bundles.isEmpty) return const [];
+  return bundles.take(5).map((bundle) {
+    final risk = (bundle['riskScore'] as num?)?.toInt() ?? 0;
+    final level = risk >= 80
+        ? 'HIGH'
+        : risk >= 50
+            ? 'MEDIUM'
+            : 'LOW';
+    final category = (bundle['conductCategory'] ?? 'Unknown').toString();
+    final userId = (bundle['reportedUserId'] ?? '').toString();
+    return '$level: Safety bundle raised on user $userId · $category';
+  }).toList(growable: false);
 });
 
 final friendSignupHeatmapProvider = Provider<List<Map<String, dynamic>>>((ref) {
-  return const [
-    {'location': 'Lagos', 'spike': 27},
-    {'location': 'Accra', 'spike': 18},
-    {'location': 'Salt Lake City', 'spike': 12},
-    {'location': 'Tokyo', 'spike': 9},
-  ];
+  final users = ref.watch(vaultUsersProvider);
+  if (users.isEmpty) return const [];
+  final grouped = <String, int>{};
+  for (final user in users) {
+    final location = user.state.isNotEmpty && user.state != 'Unknown'
+        ? user.state
+        : user.country;
+    if (location.isNotEmpty && location != 'Unknown') {
+      grouped[location] = (grouped[location] ?? 0) + 1;
+    }
+  }
+  final sorted = grouped.entries.toList(growable: false)
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return sorted
+      .take(6)
+      .map((e) => {'location': e.key, 'spike': e.value})
+      .toList(growable: false);
 });
 
 final rapidReviewQueueProvider = StateProvider<List<RapidReviewItem>>((ref) {
@@ -532,14 +551,14 @@ class AdminCommandController {
               fullName: (user['displayName'] ?? 'Unknown').toString(),
               age: 0,
               phone: 'Hidden',
-              country: 'Unknown',
+              country: (user['country'] ?? 'Unknown').toString(),
               state: (user['state'] ?? 'Unknown').toString(),
               lga: (user['lga'] ?? 'Unknown').toString(),
-              memberType: 'Unknown',
+              memberType: user['isMember'] == true ? 'Member' : 'Friend Seeker',
               gender: (user['gender'] ?? 'Unknown').toString(),
               relationshipStatus:
                   (user['relationshipStatus'] ?? 'Unknown').toString(),
-              pathwayStatus: 'Unknown',
+              pathwayStatus: (user['pathwayStatus'] ?? 'Unknown').toString(),
               academicYear: 'Unknown',
               missionName:
                   ((user['mission'] as Map<String, dynamic>?)?['missionName'] ??

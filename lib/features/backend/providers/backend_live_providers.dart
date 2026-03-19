@@ -11,7 +11,7 @@ final backendBaseUrlProvider = Provider<String>((ref) {
   if (configured.isNotEmpty) {
     return configured;
   }
-  return 'http://localhost:4100';
+  return 'http://localhost:8080';
 });
 
 final backendUserIdProvider = StateProvider<String>((ref) => 'anonymous');

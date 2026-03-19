@@ -184,6 +184,9 @@ export const typeDefs = `
     academicFocus: String
     lga: String
     state: String
+    country: String
+    isMember: Boolean!
+    pathwayStatus: PathwayStatus!
     mission: Mission
   }
 
