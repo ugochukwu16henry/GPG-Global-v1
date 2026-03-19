@@ -19,6 +19,7 @@ import '../widgets/pathway_progress_tracker.dart';
 import '../widgets/profile_card.dart';
 import '../widgets/right_context_sidebar.dart';
 import '../widgets/video_feed_card.dart';
+import 'marketplace_talent_detail_screen.dart';
 import 'privacy_safety_screen.dart';
 
 class UserCommandCenterScreen extends ConsumerStatefulWidget {
@@ -591,15 +592,92 @@ class _HomePane extends ConsumerWidget {
                     'No posts yet. Upload a picture or video to get the feed started.'),
               ),
             )
+          else if (isDesktop)
+            _DesktopMasonryFeed(items: items)
           else
             ...items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 16),
-                child: VideoFeedCard(item: item),
+                child: VideoFeedCard(
+                  item: item,
+                  onHireTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MarketplaceTalentDetailScreen(
+                          vendor: {
+                            'userId': item.ownerUserId,
+                            'vendorName': item.subtitle ?? item.title,
+                            'category': item.moderationTags.isNotEmpty
+                                ? item.moderationTags.first
+                                : 'General',
+                          },
+                          entryContext: 'Home Feed',
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+class _DesktopMasonryFeed extends StatelessWidget {
+  const _DesktopMasonryFeed({required this.items});
+
+  final List<FeedItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnCount = constraints.maxWidth > 1100 ? 3 : 2;
+        final columns = List.generate(columnCount, (_) => <Widget>[]);
+
+        for (var index = 0; index < items.length; index++) {
+          final item = items[index];
+          columns[index % columnCount].add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: VideoFeedCard(
+                item: item,
+                onHireTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MarketplaceTalentDetailScreen(
+                        vendor: {
+                          'userId': item.ownerUserId,
+                          'vendorName': item.subtitle ?? item.title,
+                          'category': item.moderationTags.isNotEmpty
+                              ? item.moderationTags.first
+                              : 'General',
+                        },
+                        entryContext: 'Home Feed',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(columnCount * 2 - 1, (index) {
+            if (index.isOdd) {
+              return const SizedBox(width: 16);
+            }
+            final columnIndex = index ~/ 2;
+            return Expanded(
+              child: Column(children: columns[columnIndex]),
+            );
+          }),
+        );
+      },
     );
   }
 }
@@ -854,7 +932,15 @@ class _MarketplacePane extends ConsumerWidget {
                             ),
                           ),
                           FilledButton.tonal(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => MarketplaceTalentDetailScreen(
+                                    vendor: item,
+                                  ),
+                                ),
+                              );
+                            },
                             style: FilledButton.styleFrom(
                                 minimumSize: const Size(120, 48)),
                             child: const Text('View'),

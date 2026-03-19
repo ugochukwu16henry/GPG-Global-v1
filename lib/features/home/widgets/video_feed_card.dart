@@ -13,9 +13,11 @@ class VideoFeedCard extends ConsumerStatefulWidget {
   const VideoFeedCard({
     super.key,
     required this.item,
+    this.onHireTap,
   });
 
   final FeedItem item;
+  final VoidCallback? onHireTap;
 
   @override
   ConsumerState<VideoFeedCard> createState() => _VideoFeedCardState();
@@ -367,12 +369,14 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                             borderRadius: BorderRadius.circular(8),
                             child: InkWell(
                               onTap: () {
-                                // Haptic feedback for tactile, thumb-friendly UX.
                                 HapticFeedback.lightImpact();
+                                if (widget.onHireTap != null) {
+                                  widget.onHireTap!();
+                                  return;
+                                }
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Hire request started.'),
-                                  ),
+                                      content: Text('Hire request started.')),
                                 );
                               },
                               borderRadius: BorderRadius.circular(8),
