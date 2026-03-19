@@ -29,7 +29,8 @@ class BackendGateway {
         'content-type': 'application/json',
         'x-user-id': userId,
         'x-role': role,
-        if (authToken != null && authToken!.isNotEmpty) 'x-auth-token': authToken!,
+        if (authToken != null && authToken!.isNotEmpty)
+          'x-auth-token': authToken!,
       },
       body: jsonEncode({
         'query': query,
@@ -86,6 +87,57 @@ class BackendGateway {
 
     final result = data['missionPeerMatch'] as Map<String, dynamic>;
     return result['summary'] as String;
+  }
+
+  Future<List<Map<String, dynamic>>> communitySearch({
+    String? education,
+    String? missionId,
+    String? relationshipStatus,
+    String? talent,
+    String? gender,
+  }) async {
+    final data = await _query(
+      '''
+      query CommunitySearch(
+        ${r'$'}education: PathwayStatus,
+        ${r'$'}missionId: ID,
+        ${r'$'}relationshipStatus: RelationshipStatus,
+        ${r'$'}talent: String,
+        ${r'$'}gender: Gender
+      ) {
+        communitySearch(
+          education: ${r'$'}education,
+          missionId: ${r'$'}missionId,
+          relationshipStatus: ${r'$'}relationshipStatus,
+          talent: ${r'$'}talent,
+          gender: ${r'$'}gender
+        ) {
+          id
+          displayName
+          relationshipStatus
+          gender
+          academicFocus
+          lga
+          state
+          mission {
+            missionName
+          }
+        }
+      }
+      ''',
+      variables: {
+        'education': education,
+        'missionId': missionId,
+        'relationshipStatus': relationshipStatus,
+        'talent': talent,
+        'gender': gender,
+      },
+    );
+
+    final items = data['communitySearch'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<String?> createMarketplaceCheckout(String userId) async {
@@ -447,7 +499,8 @@ class BackendGateway {
     return result.map((key, value) => MapEntry(key, value.toString()));
   }
 
-  Future<List<Map<String, dynamic>>> moderatorInviteCodes({int limit = 20}) async {
+  Future<List<Map<String, dynamic>>> moderatorInviteCodes(
+      {int limit = 20}) async {
     final data = await _query(
       '''
       query ModeratorInviteCodes(${r'$'}limit: Int) {
@@ -465,7 +518,9 @@ class BackendGateway {
     );
 
     final items = data['moderatorInviteCodes'] as List<dynamic>;
-    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<Map<String, String>> redeemModeratorInviteCode(String code) async {
@@ -712,7 +767,9 @@ class BackendGateway {
     );
 
     final items = data['adminActionLogs'] as List<dynamic>;
-    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<void> blockUser({
@@ -738,7 +795,8 @@ class BackendGateway {
     );
   }
 
-  Future<void> unblockUser({required String blockerId, required String blockedId}) async {
+  Future<void> unblockUser(
+      {required String blockerId, required String blockedId}) async {
     await _query(
       '''
       mutation UnblockUser(${r'$'}blockerId: ID!, ${r'$'}blockedId: ID!) {
@@ -752,7 +810,8 @@ class BackendGateway {
     );
   }
 
-  Future<void> muteUser({required String muterId, required String mutedId}) async {
+  Future<void> muteUser(
+      {required String muterId, required String mutedId}) async {
     await _query(
       '''
       mutation MuteUser(${r'$'}muterId: ID!, ${r'$'}mutedId: ID!) {
@@ -763,7 +822,8 @@ class BackendGateway {
     );
   }
 
-  Future<void> unmuteUser({required String muterId, required String mutedId}) async {
+  Future<void> unmuteUser(
+      {required String muterId, required String mutedId}) async {
     await _query(
       '''
       mutation UnmuteUser(${r'$'}muterId: ID!, ${r'$'}mutedId: ID!) {
@@ -821,7 +881,9 @@ class BackendGateway {
     );
 
     final items = data['blockedAccounts'] as List<dynamic>;
-    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<List<Map<String, dynamic>>> nearbyGatheringPlaces({
@@ -870,7 +932,9 @@ class BackendGateway {
     );
 
     final items = data['nearbyGatheringPlaces'] as List<dynamic>;
-    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<void> createLocalGatheringPlace({
@@ -970,7 +1034,8 @@ class BackendGateway {
     );
   }
 
-  Future<String> checkInGatheringPlace({required String userId, required String gatheringPlaceId}) async {
+  Future<String> checkInGatheringPlace(
+      {required String userId, required String gatheringPlaceId}) async {
     final data = await _query(
       '''
       mutation CheckInGatheringPlace(${r'$'}userId: ID!, ${r'$'}gatheringPlaceId: ID!) {
@@ -1127,7 +1192,9 @@ class BackendGateway {
       variables: {'limit': limit},
     );
     final items = data['breakGlassBundles'] as List<dynamic>;
-    return items.map((e) => (e as Map<String, dynamic>)).toList(growable: false);
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<void> resolveBreakGlassBundle({

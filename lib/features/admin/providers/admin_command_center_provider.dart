@@ -197,119 +197,70 @@ final friendSignupHeatmapProvider = Provider<List<Map<String, dynamic>>>((ref) {
 });
 
 final rapidReviewQueueProvider = StateProvider<List<RapidReviewItem>>((ref) {
-  return const [
-    RapidReviewItem(
-      id: 'rr1',
-      type: 'Marketplace Listing',
-      title: 'Certified Electrician · Lekki Axis',
-      region: 'Lagos',
-    ),
-    RapidReviewItem(
-      id: 'rr2',
-      type: 'Group Post',
-      title: 'Pathway Meet-up Promotion',
-      region: 'Abuja',
-    ),
-    RapidReviewItem(
-      id: 'rr3',
-      type: 'Marketplace Listing',
-      title: 'Applied Health Mentor Program',
-      region: 'Accra',
-    ),
-  ];
+  return const [];
 });
 
-final pendingRevenueUsdProvider = Provider<double>((ref) => 348.0);
-final verificationQueueCountProvider = Provider<int>((ref) => 12);
+final pendingRevenueUsdProvider = Provider<double>((ref) {
+  return ref.watch(marketplaceRevenueByCategoryProvider).fold<double>(
+      0, (sum, item) => sum + ((item['revenueUsd'] as num?)?.toDouble() ?? 0));
+});
+final verificationQueueCountProvider = Provider<int>((ref) {
+  return ref
+      .watch(marketplaceApplicantsProvider)
+      .where((a) => !a.approved)
+      .length;
+});
 final adPerformanceProvider = Provider<List<Map<String, dynamic>>>((ref) {
-  return const [
-    {'ad': 'Plumbing Service', 'clicks': 84},
-    {'ad': 'Female Tutor (Math)', 'clicks': 62},
-    {'ad': 'Graphic Design Mentor', 'clicks': 47},
+  final ads = ref.watch(adSubmissionProvider);
+  return [
+    {
+      'ad': 'Pending Reviews',
+      'clicks': ads.where((a) => a.status == AdModerationStatus.pending).length
+    },
+    {
+      'ad': 'Approved',
+      'clicks': ads.where((a) => a.status == AdModerationStatus.approved).length
+    },
+    {
+      'ad': 'Rejected',
+      'clicks': ads.where((a) => a.status == AdModerationStatus.rejected).length
+    },
   ];
 });
 
 final centerHealthProvider = Provider<List<Map<String, dynamic>>>((ref) {
-  return const [
-    {'center': 'Lagos Gathering Place', 'activeGroups': 42},
-    {'center': 'Accra Gathering Place', 'activeGroups': 31},
-    {'center': 'Nairobi Gathering Place', 'activeGroups': 24},
-  ];
+  final heatmap = ref.watch(globalOnlineHeatmapProvider);
+  return heatmap
+      .take(5)
+      .map((entry) => {
+            'center': '${entry['state']} Gathering Place',
+            'activeGroups': entry['online'],
+          })
+      .toList(growable: false);
 });
 
 final localAdminRolesProvider = StateProvider<List<Map<String, String>>>((ref) {
-  return const [
-    {'leader': 'Stake Admin · Lagos North', 'role': 'Regional Moderator'},
-    {'leader': 'District Admin · Accra East', 'role': 'Marketplace Verifier'},
+  final adminUserId = ref.watch(backendUserIdProvider);
+  return [
+    {'leader': 'Active Admin · $adminUserId', 'role': 'Platform Administrator'},
   ];
 });
 
 final managedUsersProvider = StateProvider<List<ManagedUser>>((ref) {
-  return const [
-    ManagedUser(
-      id: 'u1001',
-      displayName: 'Brother Adam',
-      phone: '+2348011111111',
-      deviceId: 'device-adam-001',
-    ),
-    ManagedUser(
-      id: 'u1002',
-      displayName: 'Sister Ruth',
-      phone: '+233241111111',
-      deviceId: 'device-ruth-002',
-    ),
-    ManagedUser(
-      id: 'u1003',
-      displayName: 'Friend Leo',
-      phone: '+819011111111',
-      deviceId: 'device-leo-003',
-    ),
-  ];
+  return const [];
 });
 
 final marketplaceApplicantsProvider =
     StateProvider<List<MarketplaceApplicant>>((ref) {
-  return const [
-    MarketplaceApplicant(
-      id: 'mkt1',
-      displayName: 'Brother Samuel',
-      skillCertificate: 'Electrical Installation L2',
-      hasPaid: true,
-    ),
-    MarketplaceApplicant(
-      id: 'mkt2',
-      displayName: 'Sister Esther',
-      skillCertificate: 'Math Tutor Pathway Badge',
-      hasPaid: false,
-    ),
-  ];
+  return const [];
 });
 
 final talentTieringProvider = StateProvider<List<TalentTierProfile>>((ref) {
-  return const [
-    TalentTierProfile(id: 'tt1', displayName: 'Brother Samuel', rating: 4.9),
-    TalentTierProfile(id: 'tt2', displayName: 'Sister Esther', rating: 4.8),
-    TalentTierProfile(id: 'tt3', displayName: 'Brother Michael', rating: 4.7),
-  ];
+  return const [];
 });
 
 final adSubmissionProvider = StateProvider<List<AdSubmission>>((ref) {
-  return const [
-    AdSubmission(
-      id: 'ad1',
-      title: 'Temple Marriage Workshop',
-      creativeType: 'Image',
-      copyText: 'Prepare spiritually and emotionally for temple marriage.',
-      targeting: 'Single Member',
-    ),
-    AdSubmission(
-      id: 'ad2',
-      title: 'Applied Health Mentor Circle',
-      creativeType: 'Video',
-      copyText: 'Join mentors to accelerate your health learning path.',
-      targeting: 'Pathway Connect / Degree',
-    ),
-  ];
+  return const [];
 });
 
 final blacklistedPhonesProvider =
@@ -320,29 +271,7 @@ final adminCommandErrorProvider = StateProvider<String?>((ref) => null);
 
 final immutableTransparencyLogProvider =
     StateProvider<List<ImmutableLogEntry>>((ref) {
-  return const [
-    ImmutableLogEntry(
-      timestamp: '2026-03-17T09:30:12Z',
-      actor: 'Local Admin · Lagos North',
-      action: 'WARNING_ISSUED',
-      target: 'User #u2041',
-      disciplineStep: 'Warning',
-    ),
-    ImmutableLogEntry(
-      timestamp: '2026-03-17T10:03:48Z',
-      actor: 'GPG Staff · TrustOps',
-      action: 'SUSPENSION_APPLIED',
-      target: 'User #u1882',
-      disciplineStep: 'Suspension',
-    ),
-    ImmutableLogEntry(
-      timestamp: '2026-03-17T10:41:05Z',
-      actor: 'Local Admin · Accra East',
-      action: 'POST_REMOVED',
-      target: 'Post #p9021',
-      disciplineStep: 'Policy Action',
-    ),
-  ];
+  return const [];
 });
 
 final mergedAiPulseProvider = Provider<List<String>>((ref) {
@@ -401,97 +330,59 @@ class VaultUserMetadata {
 }
 
 final registrationVelocityProvider = Provider<List<String>>((ref) {
-  return const [
-    '14 new Friends joined in Accra',
-    '5 Members updated to BYU-Pathway Degree in Nairobi',
-    '9 Friend signups this hour in Benin City',
+  final total = ref.watch(vaultUsersProvider).length;
+  return [
+    '$total total profiles loaded from backend',
+    '${ref.watch(marketplaceApplicantsProvider).length} marketplace applications in queue',
+    '${ref.watch(breakGlassDeskControllerProvider).bundles.length} break-glass safety cases',
   ];
 });
 
 final globalOnlineHeatmapProvider = Provider<List<Map<String, Object>>>((ref) {
-  return const [
-    {'country': 'Nigeria', 'state': 'Lagos', 'lga': 'Ikeja', 'online': 182},
-    {
-      'country': 'Ghana',
-      'state': 'Greater Accra',
-      'lga': 'Accra Metro',
-      'online': 126
-    },
-    {'country': 'Kenya', 'state': 'Nairobi', 'lga': 'Westlands', 'online': 74},
-    {'country': 'USA', 'state': 'Utah', 'lga': 'Salt Lake City', 'online': 63},
-  ];
+  final users = ref.watch(vaultUsersProvider);
+  final grouped = <String, int>{};
+  for (final user in users) {
+    final key = '${user.country}|${user.state}|${user.lga}';
+    grouped[key] = (grouped[key] ?? 0) + 1;
+  }
+  final rows = grouped.entries.map((entry) {
+    final parts = entry.key.split('|');
+    return {
+      'country': parts[0],
+      'state': parts[1],
+      'lga': parts[2],
+      'online': entry.value,
+    };
+  }).toList(growable: false)
+    ..sort((a, b) => (b['online'] as int).compareTo(a['online'] as int));
+  return rows;
 });
 
 final ecosystemValueProvider = Provider<Map<String, int>>((ref) {
-  return const {
-    'totalActiveUsers': 15420,
-    'members': 8421,
-    'friendsSeekers': 6999,
-    'males': 7240,
-    'females': 8180,
-    'single': 10304,
-    'married': 5116,
+  final users = ref.watch(vaultUsersProvider);
+  final total = users.length;
+  final females = users.where((u) => u.gender.toLowerCase() == 'female').length;
+  final males = users.where((u) => u.gender.toLowerCase() == 'male').length;
+  final single =
+      users.where((u) => u.relationshipStatus.toLowerCase() == 'single').length;
+  final married = users
+      .where((u) => u.relationshipStatus.toLowerCase() == 'married')
+      .length;
+  final members =
+      users.where((u) => u.memberType.toLowerCase() == 'member').length;
+  return {
+    'totalActiveUsers': total,
+    'members': members,
+    'friendsSeekers': total - members,
+    'males': males,
+    'females': females,
+    'single': single,
+    'married': married,
   };
 });
 
-final vaultUsersProvider = Provider<List<VaultUserMetadata>>((ref) {
-  return const [
-    VaultUserMetadata(
-      id: 'u3001',
-      fullName: 'Sister Ada Okafor',
-      age: 24,
-      phone: '+2348012340001',
-      country: 'Nigeria',
-      state: 'Lagos',
-      lga: 'Ikeja',
-      memberType: 'Member',
-      gender: 'Female',
-      relationshipStatus: 'Single',
-      pathwayStatus: 'Degree',
-      academicYear: 'Final Year',
-      missionName: 'Nigeria Lagos Mission',
-      talent: 'Electrician',
-      bloodGroup: 'A+',
-      genotype: 'AA',
-    ),
-    VaultUserMetadata(
-      id: 'u3002',
-      fullName: 'Brother Kofi Mensah',
-      age: 27,
-      phone: '+233241220011',
-      country: 'Ghana',
-      state: 'Greater Accra',
-      lga: 'Accra Metro',
-      memberType: 'Member',
-      gender: 'Male',
-      relationshipStatus: 'Single',
-      pathwayStatus: 'Alumni',
-      academicYear: 'Graduated',
-      missionName: 'Cote d\'Ivoire Abidjan Mission',
-      talent: 'Teacher',
-      bloodGroup: 'O+',
-      genotype: 'AS',
-    ),
-    VaultUserMetadata(
-      id: 'u3003',
-      fullName: 'Brother Daniel Aina',
-      age: 29,
-      phone: '+2348099900011',
-      country: 'Nigeria',
-      state: 'Lagos',
-      lga: 'Ikeja',
-      memberType: 'Friend/Seeker',
-      gender: 'Male',
-      relationshipStatus: 'Married',
-      pathwayStatus: 'Connect',
-      academicYear: 'Year 1',
-      missionName: 'Nigeria Benin Mission',
-      talent: 'Electrician',
-      bloodGroup: 'B+',
-      genotype: 'AA',
-    ),
-  ];
-});
+final vaultUsersProvider =
+    StateProvider<List<VaultUserMetadata>>((ref) => const []);
 
 final selectedAdminQueryPresetProvider = StateProvider<AdminQueryPreset>(
     (ref) => AdminQueryPreset.singleFemalesLagosFinalYear);
@@ -526,43 +417,52 @@ final advancedSearchResultsProvider = Provider<List<VaultUserMetadata>>((ref) {
 });
 
 final genotypePrivacyAlertsProvider = Provider<List<String>>((ref) {
-  return const [
-    'Red Alert: Unauthorized genotype access attempt blocked for user u3001',
-    'Red Alert: Sensitive data query from unverified role denied in Lagos cluster',
-  ];
+  final bundles = ref.watch(breakGlassDeskControllerProvider).bundles;
+  if (bundles.isEmpty) {
+    return const [];
+  }
+  return bundles
+      .take(3)
+      .map((bundle) =>
+          'Privacy alert on user ${bundle['reportedUserId']} · ${bundle['conductCategory']}')
+      .toList(growable: false);
 });
 
 final highBlockRiskListProvider = Provider<List<Map<String, Object>>>((ref) {
-  return const [
-    {'userId': 'u1003', 'displayName': 'Friend Leo', 'blocksLast24h': 53},
-    {
-      'userId': 'u2188',
-      'displayName': 'Unknown Seeker Account',
-      'blocksLast24h': 31
-    },
-  ];
+  final bundles = ref.watch(breakGlassDeskControllerProvider).bundles;
+  final counts = <String, int>{};
+  for (final bundle in bundles) {
+    final userId = (bundle['reportedUserId'] ?? '').toString();
+    if (userId.isEmpty) continue;
+    counts[userId] = (counts[userId] ?? 0) + 1;
+  }
+  final usersById = {
+    for (final u in ref.watch(managedUsersProvider)) u.id: u.displayName,
+  };
+  final list = counts.entries
+      .map((entry) => {
+            'userId': entry.key,
+            'displayName': usersById[entry.key] ?? 'User ${entry.key}',
+            'blocksLast24h': entry.value,
+          })
+      .toList(growable: false)
+    ..sort((a, b) =>
+        (b['blocksLast24h'] as int).compareTo(a['blocksLast24h'] as int));
+  return list;
 });
 
 final marketplaceRevenueByCategoryProvider =
     Provider<List<Map<String, Object>>>((ref) {
-  return const [
-    {'category': 'Electricians', 'revenueUsd': 1240},
-    {'category': 'Teachers', 'revenueUsd': 940},
-    {'category': 'Designers', 'revenueUsd': 610},
+  final talents = ref.watch(talentTieringProvider);
+  if (talents.isEmpty) return const [];
+  return [
+    {'category': 'Talent Listings', 'revenueUsd': talents.length * 10},
   ];
 });
 
 final birthdayAutomationQueueProvider =
     Provider<List<Map<String, String>>>((ref) {
-  return const [
-    {
-      'date': '2026-03-18',
-      'name': 'Sister Mercy',
-      'status': 'Authorized Wish Scheduled'
-    },
-    {'date': '2026-03-19', 'name': 'Brother Adam', 'status': 'Queued'},
-    {'date': '2026-03-20', 'name': 'Sister Ruth', 'status': 'Queued'},
-  ];
+  return const [];
 });
 
 class AdminCommandController {
@@ -606,6 +506,87 @@ class AdminCommandController {
       _ref.read(immutableTransparencyLogProvider.notifier).state = mapped;
     } catch (_) {
       // Keep local log as fallback
+    }
+  }
+
+  Future<void> bootstrapDashboard() async {
+    final gateway = _ref.read(backendGatewayProvider);
+    try {
+      _ref.read(adminCommandErrorProvider.notifier).state = null;
+
+      final users = await gateway.communitySearch();
+      final vault = users
+          .map(
+            (user) => VaultUserMetadata(
+              id: (user['id'] ?? '').toString(),
+              fullName: (user['displayName'] ?? 'Unknown').toString(),
+              age: 0,
+              phone: 'Hidden',
+              country: 'Unknown',
+              state: (user['state'] ?? 'Unknown').toString(),
+              lga: (user['lga'] ?? 'Unknown').toString(),
+              memberType: 'Unknown',
+              gender: (user['gender'] ?? 'Unknown').toString(),
+              relationshipStatus:
+                  (user['relationshipStatus'] ?? 'Unknown').toString(),
+              pathwayStatus: 'Unknown',
+              academicYear: 'Unknown',
+              missionName:
+                  ((user['mission'] as Map<String, dynamic>?)?['missionName'] ??
+                          'Unknown')
+                      .toString(),
+              talent: (user['academicFocus'] ?? 'Unknown').toString(),
+              bloodGroup: 'Restricted',
+              genotype: 'Restricted',
+            ),
+          )
+          .toList(growable: false);
+
+      final managed = users
+          .map(
+            (user) => ManagedUser(
+              id: (user['id'] ?? '').toString(),
+              displayName: (user['displayName'] ?? 'Unknown').toString(),
+              phone: '',
+              deviceId: '',
+            ),
+          )
+          .toList(growable: false);
+
+      final talents = users
+          .where((u) => ((u['academicFocus'] ?? '').toString()).isNotEmpty)
+          .map(
+            (user) => TalentTierProfile(
+              id: (user['id'] ?? '').toString(),
+              displayName: (user['displayName'] ?? 'Unknown').toString(),
+              rating: 4.0,
+            ),
+          )
+          .toList(growable: false);
+
+      _ref.read(vaultUsersProvider.notifier).state = vault;
+      _ref.read(managedUsersProvider.notifier).state = managed;
+      _ref.read(talentTieringProvider.notifier).state = talents;
+
+      final breakGlass = _ref.read(breakGlassDeskControllerProvider.notifier);
+      await breakGlass.refresh();
+      final bundles = _ref.read(breakGlassDeskControllerProvider).bundles;
+      _ref.read(rapidReviewQueueProvider.notifier).state = bundles
+          .take(10)
+          .map(
+            (bundle) => RapidReviewItem(
+              id: (bundle['id'] ?? '').toString(),
+              type: 'Safety Bundle',
+              title: (bundle['conductCategory'] ?? 'Policy Review').toString(),
+              region: ((bundle['chatId'] ?? 'Global')).toString(),
+            ),
+          )
+          .toList(growable: false);
+
+      await _syncLogsFromBackend();
+      await _ref.read(moderatorInviteCodeBackendProvider.notifier).refresh();
+    } catch (error) {
+      _ref.read(adminCommandErrorProvider.notifier).state = error.toString();
     }
   }
 

@@ -14,7 +14,7 @@ final backendBaseUrlProvider = Provider<String>((ref) {
   return 'http://localhost:4100';
 });
 
-final backendUserIdProvider = StateProvider<String>((ref) => 'demo-user-1');
+final backendUserIdProvider = StateProvider<String>((ref) => 'anonymous');
 
 final backendGatewayProvider = Provider<BackendGateway>((ref) {
   final session = ref.watch(sessionControllerProvider);
@@ -34,7 +34,8 @@ final backendGatewayProvider = Provider<BackendGateway>((ref) {
 });
 
 final backendRealtimeProvider = Provider<BackendRealtimeService>((ref) {
-  final service = BackendRealtimeService(baseUrl: ref.watch(backendBaseUrlProvider));
+  final service =
+      BackendRealtimeService(baseUrl: ref.watch(backendBaseUrlProvider));
   service.connect();
   ref.onDispose(service.dispose);
   return service;
@@ -223,7 +224,9 @@ class BackendAuthController extends StateNotifier<BackendAuthState> {
       _read.read(backendUserIdProvider.notifier).state = userId;
       _read.read(sessionControllerProvider.notifier).setUserSession(
             displayName: result['displayName'] ?? displayName ?? 'User',
-            identity: (result['isMember'] == 'true') ? CommunityIdentity.member : CommunityIdentity.friendSeeker,
+            identity: (result['isMember'] == 'true')
+                ? CommunityIdentity.member
+                : CommunityIdentity.friendSeeker,
             sessionToken: result['sessionToken']!,
           );
       state = state.copyWith(
@@ -269,8 +272,10 @@ class ModeratorInviteCodeState {
   }
 }
 
-class ModeratorInviteCodeBackendController extends StateNotifier<ModeratorInviteCodeState> {
-  ModeratorInviteCodeBackendController(this._read) : super(const ModeratorInviteCodeState());
+class ModeratorInviteCodeBackendController
+    extends StateNotifier<ModeratorInviteCodeState> {
+  ModeratorInviteCodeBackendController(this._read)
+      : super(const ModeratorInviteCodeState());
 
   final Ref _read;
 
@@ -285,7 +290,8 @@ class ModeratorInviteCodeBackendController extends StateNotifier<ModeratorInvite
     }
   }
 
-  Future<void> generate({required String gatheringPlace, required String roleLabel}) async {
+  Future<void> generate(
+      {required String gatheringPlace, required String roleLabel}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final gateway = _read.read(backendGatewayProvider);
@@ -302,7 +308,8 @@ class ModeratorInviteCodeBackendController extends StateNotifier<ModeratorInvite
   }
 }
 
-final moderatorInviteCodeBackendProvider = StateNotifierProvider<ModeratorInviteCodeBackendController, ModeratorInviteCodeState>((ref) {
+final moderatorInviteCodeBackendProvider = StateNotifierProvider<
+    ModeratorInviteCodeBackendController, ModeratorInviteCodeState>((ref) {
   return ModeratorInviteCodeBackendController(ref);
 });
 
@@ -339,7 +346,8 @@ class GatheringPlaceController extends StateNotifier<GatheringPlaceState> {
 
   final Ref _read;
 
-  Future<void> discoverNearby({required double latitude, required double longitude}) async {
+  Future<void> discoverNearby(
+      {required double latitude, required double longitude}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final gateway = _read.read(backendGatewayProvider);
@@ -457,21 +465,26 @@ class SilentGuardianController extends StateNotifier<SilentGuardianState> {
 
   ({int riskScore, String category, String nudge}) _scanLocally(String text) {
     final normalized = text.toLowerCase();
-    if (normalized.contains('stupid') || normalized.contains('hate') || normalized.contains('idiot')) {
+    if (normalized.contains('stupid') ||
+        normalized.contains('hate') ||
+        normalized.contains('idiot')) {
       return (
         riskScore: 92,
         category: 'DISRESPECTFUL_LANGUAGE',
-        nudge: 'This message looks like it might violate our community standards. Are you sure you want to send it?'
+        nudge:
+            'This message looks like it might violate our community standards. Are you sure you want to send it?'
       );
     }
     if (normalized.contains('scam') || normalized.contains('send money now')) {
       return (
         riskScore: 95,
         category: 'DISHONEST_CONDUCT',
-        nudge: 'Potential scam language detected. Please rephrase before sending.'
+        nudge:
+            'Potential scam language detected. Please rephrase before sending.'
       );
     }
-    if (normalized.contains('inappropriate') || normalized.contains('immodest')) {
+    if (normalized.contains('inappropriate') ||
+        normalized.contains('immodest')) {
       return (
         riskScore: 91,
         category: 'IMMODEST_INAPPROPRIATE_CONTENT',
@@ -548,7 +561,8 @@ class SilentGuardianController extends StateNotifier<SilentGuardianState> {
   }) async {
     final userId = _read.read(backendUserIdProvider);
     final gateway = _read.read(backendGatewayProvider);
-    final frankingProof = 'frank-${DateTime.now().millisecondsSinceEpoch}-${roomId.hashCode}';
+    final frankingProof =
+        'frank-${DateTime.now().millisecondsSinceEpoch}-${roomId.hashCode}';
     await gateway.createUserReportBundle(
       chatId: roomId,
       reporterUserId: userId,
@@ -605,7 +619,8 @@ class BreakGlassDeskController extends StateNotifier<BreakGlassDeskState> {
     }
   }
 
-  Future<void> resolve({required String bundleId, required String action}) async {
+  Future<void> resolve(
+      {required String bundleId, required String action}) async {
     final gateway = _read.read(backendGatewayProvider);
     final adminUserId = _read.read(backendUserIdProvider);
     await gateway.resolveBreakGlassBundle(

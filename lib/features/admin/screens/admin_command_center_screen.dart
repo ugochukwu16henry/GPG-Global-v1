@@ -5,11 +5,26 @@ import '../../../core/theme/app_colors.dart';
 import '../../backend/providers/backend_live_providers.dart';
 import '../providers/admin_command_center_provider.dart';
 
-class AdminCommandCenterScreen extends ConsumerWidget {
+class AdminCommandCenterScreen extends ConsumerStatefulWidget {
   const AdminCommandCenterScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdminCommandCenterScreen> createState() =>
+      _AdminCommandCenterScreenState();
+}
+
+class _AdminCommandCenterScreenState
+    extends ConsumerState<AdminCommandCenterScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(adminCommandControllerProvider).bootstrapDashboard();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final controller = ref.watch(adminCommandControllerProvider);
     final activeRole = ref.watch(activeAdminRoleProvider);
     final backendError = ref.watch(adminCommandErrorProvider);
@@ -55,6 +70,14 @@ class AdminCommandCenterScreen extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: const Color(0xFF0F1117),
           title: const Text('GPG Admin Command Center'),
+          actions: [
+            IconButton(
+              tooltip: 'Refresh dashboard',
+              onPressed: () =>
+                  ref.read(adminCommandControllerProvider).bootstrapDashboard(),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
           bottom: const TabBar(
             isScrollable: true,
             tabs: [
@@ -100,7 +123,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                       ...registrationVelocity.map(
                         (line) => Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text(line, style: TextStyle(color: scheme.onSurface)),
+                          child: Text(line,
+                              style: TextStyle(color: scheme.onSurface)),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -109,9 +133,13 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          Chip(label: Text('Active ${ecosystem['totalActiveUsers']}')),
+                          Chip(
+                              label: Text(
+                                  'Active ${ecosystem['totalActiveUsers']}')),
                           Chip(label: Text('Members ${ecosystem['members']}')),
-                          Chip(label: Text('Friends/Seekers ${ecosystem['friendsSeekers']}')),
+                          Chip(
+                              label: Text(
+                                  'Friends/Seekers ${ecosystem['friendsSeekers']}')),
                           Chip(label: Text('Males ${ecosystem['males']}')),
                           Chip(label: Text('Females ${ecosystem['females']}')),
                           Chip(label: Text('Single ${ecosystem['single']}')),
@@ -129,11 +157,12 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                     children: [
                       _miniTitle('AI Pulse'),
                       ...aiPulse.take(5).map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(item, style: TextStyle(color: scheme.onSurface)),
-                        ),
-                      ),
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(item,
+                                  style: TextStyle(color: scheme.onSurface)),
+                            ),
+                          ),
                       const SizedBox(height: 12),
                       _miniTitle('Heat Map (Friend Sign-ups)'),
                       Wrap(
@@ -142,8 +171,10 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                         children: heatMap
                             .map(
                               (spot) => Chip(
-                                label: Text('${spot['location']} +${spot['spike']}'),
-                                backgroundColor: AppColors.pathwayAmber.withValues(alpha: 0.22),
+                                label: Text(
+                                    '${spot['location']} +${spot['spike']}'),
+                                backgroundColor: AppColors.pathwayAmber
+                                    .withValues(alpha: 0.22),
                               ),
                             )
                             .toList(),
@@ -151,7 +182,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       _miniTitle('Rapid Review (Approve / Deny)'),
                       if (reviewQueue.isEmpty)
-                        Text('No pending review items.', style: TextStyle(color: scheme.onSurface))
+                        Text('No pending review items.',
+                            style: TextStyle(color: scheme.onSurface))
                       else
                         _rapidReviewDeck(ref, reviewQueue),
                     ],
@@ -162,10 +194,18 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                 _card(
                   child: Column(
                     children: const [
-                      _WidgetRow('Active Shield', 'Shows Safety Score', 'View 5 pending reports'),
-                      _WidgetRow('Talent Desk', 'Shows pending marketplace funds', 'Verify 12 Skill Certificates'),
-                      _WidgetRow('Faith Journey', 'Tracks friend-to-member updates', 'Send Welcome Home notifications'),
-                      _WidgetRow('Traffic Taiji', 'Shows global latency by region', 'Optimize Node 4'),
+                      _WidgetRow('Active Shield', 'Shows Safety Score',
+                          'View 5 pending reports'),
+                      _WidgetRow(
+                          'Talent Desk',
+                          'Shows pending marketplace funds',
+                          'Verify 12 Skill Certificates'),
+                      _WidgetRow(
+                          'Faith Journey',
+                          'Tracks friend-to-member updates',
+                          'Send Welcome Home notifications'),
+                      _WidgetRow('Traffic Taiji',
+                          'Shows global latency by region', 'Optimize Node 4'),
                     ],
                   ),
                 ),
@@ -175,11 +215,14 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                   child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Level 1: Global AI (Llama 4) filters most toxicity/spam.'),
+                      Text(
+                          'Level 1: Global AI (Llama 4) filters most toxicity/spam.'),
                       SizedBox(height: 6),
-                      Text('Level 2: Local Admins handle local group disputes.'),
+                      Text(
+                          'Level 2: Local Admins handle local group disputes.'),
                       SizedBox(height: 6),
-                      Text('Level 3: GPG Staff handles legal, finance, and ban appeals.'),
+                      Text(
+                          'Level 3: GPG Staff handles legal, finance, and ban appeals.'),
                     ],
                   ),
                 ),
@@ -194,10 +237,12 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _miniTitle('You CAN See'),
-                      const Text('Full Name, Age, Phone · LGA/State/Country · Blood Group/Genotype · Mission/Pathway · Payments'),
+                      const Text(
+                          'Full Name, Age, Phone · LGA/State/Country · Blood Group/Genotype · Mission/Pathway · Payments'),
                       const SizedBox(height: 8),
                       _miniTitle('You CANNOT See'),
-                      const Text('Private chat messages · User passwords · Permanently deleted photos · Private prayer/testimony drafts'),
+                      const Text(
+                          'Private chat messages · User passwords · Permanently deleted photos · Private prayer/testimony drafts'),
                       const SizedBox(height: 12),
                       _miniTitle('Metadata Records'),
                       ...vaultUsers.map(
@@ -227,20 +272,25 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                         items: const [
                           DropdownMenuItem(
                             value: AdminQueryPreset.singleFemalesLagosFinalYear,
-                            child: Text('Single Females in Lagos, final year Degree'),
+                            child: Text(
+                                'Single Females in Lagos, final year Degree'),
                           ),
                           DropdownMenuItem(
                             value: AdminQueryPreset.returnedMissionariesAbidjan,
-                            child: Text('Returned Missionaries from Cote d\'Ivoire Abidjan'),
+                            child: Text(
+                                'Returned Missionaries from Cote d\'Ivoire Abidjan'),
                           ),
                           DropdownMenuItem(
                             value: AdminQueryPreset.electriciansIkejaAa,
-                            child: Text('Certified Electricians in Ikeja with AA genotype'),
+                            child: Text(
+                                'Certified Electricians in Ikeja with AA genotype'),
                           ),
                         ],
                         onChanged: (value) {
                           if (value != null) {
-                            ref.read(selectedAdminQueryPresetProvider.notifier).state = value;
+                            ref
+                                .read(selectedAdminQueryPresetProvider.notifier)
+                                .state = value;
                           }
                         },
                       ),
@@ -270,13 +320,16 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _miniTitle('Automatic Flagging Desk'),
-                      const Text('Flagged scam/un-wholesome posts are frozen and sent to review queue.'),
+                      const Text(
+                          'Flagged scam/un-wholesome posts are frozen and sent to review queue.'),
                       const SizedBox(height: 8),
                       _miniTitle('Genotype Privacy Red Alerts'),
                       ...genotypeAlerts.map(
                         (alert) => Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text(alert, style: const TextStyle(color: AppColors.warmCrimson)),
+                          child: Text(alert,
+                              style: const TextStyle(
+                                  color: AppColors.warmCrimson)),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -305,7 +358,10 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                           FilledButton.tonal(
                             onPressed: breakGlassDesk.isLoading
                                 ? null
-                                : () => ref.read(breakGlassDeskControllerProvider.notifier).refresh(),
+                                : () => ref
+                                    .read(breakGlassDeskControllerProvider
+                                        .notifier)
+                                    .refresh(),
                             child: const Text('Refresh Alerts'),
                           ),
                         ],
@@ -334,17 +390,23 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 'Chat ${bundle['chatId']} · Risk ${bundle['riskScore'] ?? '-'} · ${bundle['conductCategory']}',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
-                              Text('User History: Reports handled through prior moderation logs.'),
+                              Text(
+                                  'User History: Reports handled through prior moderation logs.'),
                               const SizedBox(height: 6),
-                              Text('Evidence (3–5 messages):', style: TextStyle(color: scheme.onSurface)),
-                              ...((bundle['evidenceMessages'] as List<dynamic>? ?? const [])
+                              Text('Evidence (3–5 messages):',
+                                  style: TextStyle(color: scheme.onSurface)),
+                              ...((bundle['evidenceMessages']
+                                          as List<dynamic>? ??
+                                      const [])
                                   .take(5)
                                   .map((m) => Padding(
                                         padding: const EdgeInsets.only(top: 4),
-                                        child: Text('• ${(m as Map<String, dynamic>)['body']}'),
+                                        child: Text(
+                                            '• ${(m as Map<String, dynamic>)['body']}'),
                                       ))
                                   .toList()),
                               const SizedBox(height: 8),
@@ -354,29 +416,42 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                                 children: [
                                   FilledButton.tonal(
                                     onPressed: () => ref
-                                        .read(breakGlassDeskControllerProvider.notifier)
-                                        .resolve(bundleId: bundle['id'].toString(), action: 'DISMISSED'),
+                                        .read(breakGlassDeskControllerProvider
+                                            .notifier)
+                                        .resolve(
+                                            bundleId: bundle['id'].toString(),
+                                            action: 'DISMISSED'),
                                     child: const Text('Dismiss'),
                                   ),
                                   FilledButton.tonal(
                                     onPressed: () => ref
-                                        .read(breakGlassDeskControllerProvider.notifier)
-                                        .resolve(bundleId: bundle['id'].toString(), action: 'WARNING_SENT'),
+                                        .read(breakGlassDeskControllerProvider
+                                            .notifier)
+                                        .resolve(
+                                            bundleId: bundle['id'].toString(),
+                                            action: 'WARNING_SENT'),
                                     child: const Text('Send Warning'),
                                   ),
                                   FilledButton.tonal(
                                     onPressed: () => ref
-                                        .read(breakGlassDeskControllerProvider.notifier)
-                                        .resolve(bundleId: bundle['id'].toString(), action: 'SUSPENDED_7_DAYS'),
+                                        .read(breakGlassDeskControllerProvider
+                                            .notifier)
+                                        .resolve(
+                                            bundleId: bundle['id'].toString(),
+                                            action: 'SUSPENDED_7_DAYS'),
                                     child: const Text('7-Day Suspension'),
                                   ),
                                   FilledButton.tonal(
                                     style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.24),
+                                      backgroundColor: AppColors.warmCrimson
+                                          .withValues(alpha: 0.24),
                                     ),
                                     onPressed: () => ref
-                                        .read(breakGlassDeskControllerProvider.notifier)
-                                        .resolve(bundleId: bundle['id'].toString(), action: 'PERMANENT_BAN'),
+                                        .read(breakGlassDeskControllerProvider
+                                            .notifier)
+                                        .resolve(
+                                            bundleId: bundle['id'].toString(),
+                                            action: 'PERMANENT_BAN'),
                                     child: const Text('Permanent Ban'),
                                   ),
                                 ],
@@ -410,7 +485,9 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   'Suspended: ${user.isSuspended} · Shadow: ${user.isShadowBanned} · Ban: ${user.isDeletedBanned}',
-                                  style: const TextStyle(color: AppColors.pathwayAmber, fontSize: 12),
+                                  style: const TextStyle(
+                                      color: AppColors.pathwayAmber,
+                                      fontSize: 12),
                                 ),
                                 const SizedBox(height: 8),
                                 Wrap(
@@ -418,26 +495,32 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                                   runSpacing: 8,
                                   children: [
                                     FilledButton.tonal(
-                                      onPressed: () => controller.suspendUser(userId: user.id, hours: 24),
+                                      onPressed: () => controller.suspendUser(
+                                          userId: user.id, hours: 24),
                                       child: const Text('Suspend 24h'),
                                     ),
                                     FilledButton.tonal(
-                                      onPressed: () => controller.suspendUser(userId: user.id, hours: 7 * 24),
+                                      onPressed: () => controller.suspendUser(
+                                          userId: user.id, hours: 7 * 24),
                                       child: const Text('Suspend 7d'),
                                     ),
                                     FilledButton.tonal(
-                                      onPressed: () => controller.suspendUser(userId: user.id, hours: 30 * 24),
+                                      onPressed: () => controller.suspendUser(
+                                          userId: user.id, hours: 30 * 24),
                                       child: const Text('Suspend 30d'),
                                     ),
                                     FilledButton.tonal(
-                                      onPressed: () => controller.shadowBanUser(userId: user.id),
+                                      onPressed: () => controller.shadowBanUser(
+                                          userId: user.id),
                                       child: const Text('Shadow Ban'),
                                     ),
                                     FilledButton.tonal(
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.25),
+                                        backgroundColor: AppColors.warmCrimson
+                                            .withValues(alpha: 0.25),
                                       ),
-                                      onPressed: () => controller.deleteBanUser(userId: user.id),
+                                      onPressed: () => controller.deleteBanUser(
+                                          userId: user.id),
                                       child: const Text('Delete / Ban'),
                                     ),
                                   ],
@@ -468,7 +551,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                       ...revenueByCategory.map(
                         (entry) => Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Text('${entry['category']}: \$${entry['revenueUsd']}'),
+                          child: Text(
+                              '${entry['category']}: \$${entry['revenueUsd']}'),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -476,7 +560,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                       ...birthdayQueue.map(
                         (entry) => Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Text('${entry['date']} · ${entry['name']} · ${entry['status']}'),
+                          child: Text(
+                              '${entry['date']} · ${entry['name']} · ${entry['status']}'),
                         ),
                       ),
                     ],
@@ -488,10 +573,12 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Payment Tracking: \$${revenue.toStringAsFixed(2)} pending',
+                      Text(
+                          'Payment Tracking: \$${revenue.toStringAsFixed(2)} pending',
                           style: TextStyle(color: scheme.onSurface)),
                       const SizedBox(height: 8),
-                      Text('Verification Queue: $verificationQueue skill certificates',
+                      Text(
+                          'Verification Queue: $verificationQueue skill certificates',
                           style: TextStyle(color: scheme.onSurface)),
                       const SizedBox(height: 12),
                       _miniTitle('Ad Performance'),
@@ -499,9 +586,11 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                         (entry) => ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          title: Text(entry['ad'].toString(), style: TextStyle(color: scheme.onSurface)),
+                          title: Text(entry['ad'].toString(),
+                              style: TextStyle(color: scheme.onSurface)),
                           trailing: Text('${entry['clicks']} clicks',
-                              style: const TextStyle(color: AppColors.pathwayAmber)),
+                              style: const TextStyle(
+                                  color: AppColors.pathwayAmber)),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -517,14 +606,16 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                                 ),
                               ),
                               FilledButton.tonal(
-                                onPressed: () => controller.approveMarketplace(app.id),
+                                onPressed: () =>
+                                    controller.approveMarketplace(app.id),
                                 child: const Text('Approve for Marketplace'),
                               ),
                               const SizedBox(width: 6),
                               FilledButton.tonal(
                                 onPressed: () => controller.grantMeritAccess(
                                   applicantId: app.id,
-                                  reason: 'Service scholarship / Pathway excellence',
+                                  reason:
+                                      'Service scholarship / Pathway excellence',
                                 ),
                                 child: const Text('Grant Merit Access'),
                               ),
@@ -545,8 +636,11 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                                 ),
                               ),
                               FilledButton.tonal(
-                                onPressed: () => controller.featureTalent(talent.id),
-                                child: Text(talent.isFeatured ? 'Unfeature' : 'Feature'),
+                                onPressed: () =>
+                                    controller.featureTalent(talent.id),
+                                child: Text(talent.isFeatured
+                                    ? 'Unfeature'
+                                    : 'Feature'),
                               ),
                             ],
                           ),
@@ -578,22 +672,28 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                                   Text(ad.copyText),
                                   const SizedBox(height: 4),
                                   Text('Targeting: ${ad.targeting}',
-                                      style: const TextStyle(color: AppColors.pathwayAmber)),
+                                      style: const TextStyle(
+                                          color: AppColors.pathwayAmber)),
                                   const SizedBox(height: 8),
                                   Wrap(
                                     spacing: 8,
                                     runSpacing: 8,
                                     children: [
                                       FilledButton.tonal(
-                                        onPressed: () => controller.moderateAd(adId: ad.id, approved: true),
-                                        child: const Text('Approve - Aligns with GPG Values'),
+                                        onPressed: () => controller.moderateAd(
+                                            adId: ad.id, approved: true),
+                                        child: const Text(
+                                            'Approve - Aligns with GPG Values'),
                                       ),
                                       FilledButton.tonal(
                                         style: FilledButton.styleFrom(
-                                          backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.24),
+                                          backgroundColor: AppColors.warmCrimson
+                                              .withValues(alpha: 0.24),
                                         ),
-                                        onPressed: () => controller.moderateAd(adId: ad.id, approved: false),
-                                        child: const Text('Reject - Inappropriate Content'),
+                                        onPressed: () => controller.moderateAd(
+                                            adId: ad.id, approved: false),
+                                        child: const Text(
+                                            'Reject - Inappropriate Content'),
                                       ),
                                     ],
                                   ),
@@ -633,12 +733,14 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                             .toList(),
                         onChanged: (value) {
                           if (value != null) {
-                            ref.read(activeAdminRoleProvider.notifier).state = value;
+                            ref.read(activeAdminRoleProvider.notifier).state =
+                                value;
                           }
                         },
                       ),
                       const SizedBox(height: 8),
-                      const Text('Active permissions are enforced by role in each action panel.'),
+                      const Text(
+                          'Active permissions are enforced by role in each action panel.'),
                     ],
                   ),
                 ),
@@ -678,7 +780,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Admin generates single-use moderator codes per Gathering Place and role.'),
+                      const Text(
+                          'Admin generates single-use moderator codes per Gathering Place and role.'),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -687,26 +790,39 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                           FilledButton.tonal(
                             onPressed: moderatorCodes.isLoading
                                 ? null
-                                : () => ref.read(moderatorInviteCodeBackendProvider.notifier).refresh(),
+                                : () => ref
+                                    .read(moderatorInviteCodeBackendProvider
+                                        .notifier)
+                                    .refresh(),
                             child: const Text('Refresh Codes'),
                           ),
                           FilledButton.tonal(
                             onPressed: () {
-                              ref.read(moderatorInviteCodeBackendProvider.notifier).generate(
-                                    gatheringPlace: 'Lagos Island Gathering Place',
+                              ref
+                                  .read(moderatorInviteCodeBackendProvider
+                                      .notifier)
+                                  .generate(
+                                    gatheringPlace:
+                                        'Lagos Island Gathering Place',
                                     roleLabel: 'Service Moderator',
                                   );
                             },
-                            child: const Text('Generate Lagos Service Mod Code'),
+                            child:
+                                const Text('Generate Lagos Service Mod Code'),
                           ),
                           FilledButton.tonal(
                             onPressed: () {
-                              ref.read(moderatorInviteCodeBackendProvider.notifier).generate(
-                                    gatheringPlace: 'Provo South Gathering Place',
+                              ref
+                                  .read(moderatorInviteCodeBackendProvider
+                                      .notifier)
+                                  .generate(
+                                    gatheringPlace:
+                                        'Provo South Gathering Place',
                                     roleLabel: 'Temple Prep Moderator',
                                   );
                             },
-                            child: const Text('Generate Provo Temple Prep Code'),
+                            child:
+                                const Text('Generate Provo Temple Prep Code'),
                           ),
                         ],
                       ),
@@ -716,18 +832,21 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                       ],
                       if (moderatorCodes.error != null) ...[
                         const SizedBox(height: 8),
-                        Text(moderatorCodes.error!, style: const TextStyle(color: AppColors.warmCrimson)),
+                        Text(moderatorCodes.error!,
+                            style:
+                                const TextStyle(color: AppColors.warmCrimson)),
                       ],
                       const SizedBox(height: 10),
                       ...moderatorCodes.items.take(8).map(
-                        (code) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            '${code['code']} · ${code['gatheringPlace']} · ${code['roleLabel']} · ${code['isActive'] == true ? 'Active' : 'Used'}',
-                            style: TextStyle(color: scheme.onSurface, fontSize: 12),
+                            (code) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Text(
+                                '${code['code']} · ${code['gatheringPlace']} · ${code['roleLabel']} · ${code['isActive'] == true ? 'Active' : 'Used'}',
+                                style: TextStyle(
+                                    color: scheme.onSurface, fontSize: 12),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -742,7 +861,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
                               '${entry.timestamp} · ${entry.actor} · ${entry.action} · ${entry.target} · ${entry.disciplineStep}',
-                              style: TextStyle(color: scheme.onSurface, fontSize: 12),
+                              style: TextStyle(
+                                  color: scheme.onSurface, fontSize: 12),
                             ),
                           ),
                         )
@@ -769,9 +889,12 @@ class AdminCommandCenterScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${current.type} · ${current.region}',
-              style: const TextStyle(color: AppColors.pathwayAmber, fontSize: 12)),
+              style:
+                  const TextStyle(color: AppColors.pathwayAmber, fontSize: 12)),
           const SizedBox(height: 6),
-          Text(current.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          Text(current.title,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -792,7 +915,8 @@ class AdminCommandCenterScreen extends ConsumerWidget {
                     ref.read(rapidReviewQueueProvider.notifier).state = next;
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.warmCrimson.withValues(alpha: 0.24),
+                    backgroundColor:
+                        AppColors.warmCrimson.withValues(alpha: 0.24),
                   ),
                   child: const Text('Deny'),
                 ),
@@ -860,12 +984,14 @@ class _WidgetRow extends StatelessWidget {
         children: [
           Expanded(
             flex: 2,
-            child: Text(widgetName, style: const TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(widgetName,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
           Expanded(flex: 3, child: Text(function)),
           Expanded(
             flex: 3,
-            child: Text(action, style: const TextStyle(color: AppColors.pathwayAmber)),
+            child: Text(action,
+                style: const TextStyle(color: AppColors.pathwayAmber)),
           ),
         ],
       ),
