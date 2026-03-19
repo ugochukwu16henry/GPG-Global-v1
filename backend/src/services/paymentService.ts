@@ -3,11 +3,21 @@ import { ProfessionalStatus } from '@prisma/client';
 import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
 
-const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null;
+
+function ensureStripeConfigured() {
+  if (!stripe) {
+    throw new Error(
+      'Stripe integration is not configured. Set STRIPE_SECRET_KEY to enable checkout/webhooks.'
+    );
+  }
+  return stripe;
+}
 
 export const paymentService = {
   async createMarketplaceCheckout(userId: string) {
-    const session = await stripe.checkout.sessions.create({
+    const stripeClient = ensureStripeConfigured();
+    const session = await stripeClient.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
       line_items: [
@@ -54,7 +64,12 @@ export const paymentService = {
       throw new Error('Missing Stripe signature');
     }
 
-    const event = stripe.webhooks.constructEvent(rawBody, signature, env.STRIPE_WEBHOOK_SECRET);
+    const stripeClient = ensureStripeConfigured();
+    if (!env.STRIPE_WEBHOOK_SECRET) {
+      throw new Error('Stripe webhook is not configured. Set STRIPE_WEBHOOK_SECRET.');
+    }
+
+    const event = stripeClient.webhooks.constructEvent(rawBody, signature, env.STRIPE_WEBHOOK_SECRET);
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
@@ -83,6 +98,9 @@ export const paymentService = {
   },
 
   async handleFlutterwaveEvent(eventBody: any, signature: string | undefined) {
+    if (!env.FLUTTERWAVE_SECRET_HASH) {
+      throw new Error('Flutterwave integration is not configured. Set FLUTTERWAVE_SECRET_HASH.');
+    }
     if (signature !== env.FLUTTERWAVE_SECRET_HASH) {
       throw new Error('Invalid Flutterwave signature hash.');
     }

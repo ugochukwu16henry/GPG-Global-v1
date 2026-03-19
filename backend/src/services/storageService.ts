@@ -17,7 +17,14 @@ export const BUCKETS = {
 
 export type BucketName = (typeof BUCKETS)[keyof typeof BUCKETS];
 
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+function getSupabaseClient() {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      'Supabase Storage is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.'
+    );
+  }
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 // Signed URL TTL (seconds)
 const UPLOAD_TTL = 60 * 5;      // 5 minutes to upload
@@ -27,6 +34,11 @@ const DOWNLOAD_TTL = 60 * 60;   // 1 hour to read
 // Bucket initialisation (run once at startup)
 // ---------------------------------------------------------------------------
 export async function ensureBucketsExist(): Promise<void> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('[storage] Supabase keys missing; skipping bucket initialization.');
+    return;
+  }
+  const supabase = getSupabaseClient();
   const { data: existing } = await supabase.storage.listBuckets();
   const existingNames = new Set((existing ?? []).map((b) => b.name));
 
@@ -66,6 +78,7 @@ export async function createUploadUrl(
   bucket: BucketName,
   path: string,
 ): Promise<{ signedUrl: string; token: string; path: string }> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUploadUrl(path);
@@ -86,6 +99,7 @@ export async function createDownloadUrl(
   path: string,
   expiresInSeconds = DOWNLOAD_TTL,
 ): Promise<string> {
+  const supabase = getSupabaseClient();
   if (bucket === BUCKETS.avatars) {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
@@ -106,6 +120,7 @@ export async function createDownloadUrl(
  * Delete a file from storage (e.g., when a user deletes their avatar or post).
  */
 export async function deleteFile(bucket: BucketName, path: string): Promise<void> {
+  const supabase = getSupabaseClient();
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) {
     throw new Error(`Failed to delete file: ${error.message}`);
@@ -116,6 +131,7 @@ export async function deleteFile(bucket: BucketName, path: string): Promise<void
  * List files under a prefix (folder) — useful for admin views.
  */
 export async function listFiles(bucket: BucketName, prefix: string) {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase.storage.from(bucket).list(prefix, {
     limit: 100,
     sortBy: { column: 'created_at', order: 'desc' },

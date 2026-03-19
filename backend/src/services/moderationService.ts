@@ -11,6 +11,15 @@ type ModerationResult = {
 
 export const moderationService = {
   async moderateMessage(text: string): Promise<ModerationResult> {
+    if (!env.LLAMA4_MODERATION_URL || !env.LLAMA4_MODERATION_API_KEY) {
+      return {
+        violates: false,
+        severity: ChatViolationSeverity.LOW,
+        reason: 'Moderation service not configured',
+        label: 'unconfigured'
+      };
+    }
+
     const response = await axios.post(
       env.LLAMA4_MODERATION_URL,
       { text, policy: 'gpg-gospel-standards' },

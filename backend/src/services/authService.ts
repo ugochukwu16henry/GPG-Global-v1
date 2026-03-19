@@ -4,7 +4,12 @@ import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
 import { sessionService } from './sessionService.js';
 
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+function getSupabaseAuthClient() {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 function hashOtp(value: string) {
   return crypto.createHash('sha256').update(value).digest('hex');
@@ -24,7 +29,12 @@ export const authService = {
       data: { phone, otpCodeHash, expiresAt }
     });
 
-    await supabase.auth.signInWithOtp({ phone });
+    const supabase = getSupabaseAuthClient();
+    if (supabase) {
+      await supabase.auth.signInWithOtp({ phone });
+    } else {
+      console.warn('[auth] Supabase keys missing; OTP sent in local/dev mode only.');
+    }
 
     return {
       phone,
