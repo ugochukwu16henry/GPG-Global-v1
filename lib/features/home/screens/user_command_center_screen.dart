@@ -118,7 +118,7 @@ class _UserCommandCenterScreenState
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1440),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -155,7 +155,7 @@ class _UserCommandCenterScreenState
                           },
                           onSignOut: _signOut,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         Expanded(
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
@@ -472,12 +472,24 @@ class _HomePane extends ConsumerWidget {
             ],
           );
 
+    final featuredItem = items.isEmpty ? null : items.first;
+    final remainingItems =
+        items.length <= 1 ? const <FeedItem>[] : items.sublist(1);
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           topCards,
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          if (isDesktop)
+            const _SectionHeader(
+              eyebrow: 'Publisher Desk',
+              title: 'Share Something Uplifting',
+              subtitle:
+                  'Post updates, testimonies, and opportunities into your gathering feed.',
+            ),
+          if (isDesktop) const SizedBox(height: 10),
           GlassCard(
             borderRadius: 16,
             padding: const EdgeInsets.all(16),
@@ -582,7 +594,7 @@ class _HomePane extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           if (items.isEmpty)
             const GlassCard(
               borderRadius: 16,
@@ -593,7 +605,45 @@ class _HomePane extends ConsumerWidget {
               ),
             )
           else if (isDesktop)
-            _DesktopMasonryFeed(items: items)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _SectionHeader(
+                  eyebrow: 'Editorial Feed',
+                  title: 'Featured + Live Community Stream',
+                  subtitle:
+                      'Curated spotlight first, then a staggered masonry of live posts.',
+                ),
+                const SizedBox(height: 12),
+                if (featuredItem != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: VideoFeedCard(
+                      item: featuredItem,
+                      onHireTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => MarketplaceTalentDetailScreen(
+                              vendor: {
+                                'userId': featuredItem.ownerUserId,
+                                'vendorName':
+                                    featuredItem.subtitle ?? featuredItem.title,
+                                'category':
+                                    featuredItem.moderationTags.isNotEmpty
+                                        ? featuredItem.moderationTags.first
+                                        : 'General',
+                              },
+                              entryContext: 'Featured Feed',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                if (remainingItems.isNotEmpty)
+                  _DesktopMasonryFeed(items: remainingItems),
+              ],
+            )
           else
             ...items.map(
               (item) => Padding(
@@ -636,6 +686,7 @@ class _DesktopMasonryFeed extends StatelessWidget {
       builder: (context, constraints) {
         final columnCount = constraints.maxWidth > 1100 ? 3 : 2;
         final columns = List.generate(columnCount, (_) => <Widget>[]);
+        final gutter = columnCount == 3 ? 20.0 : 16.0;
 
         for (var index = 0; index < items.length; index++) {
           final item = items[index];
@@ -669,15 +720,68 @@ class _DesktopMasonryFeed extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.generate(columnCount * 2 - 1, (index) {
             if (index.isOdd) {
-              return const SizedBox(width: 16);
+              return SizedBox(width: gutter);
             }
             final columnIndex = index ~/ 2;
             return Expanded(
-              child: Column(children: columns[columnIndex]),
+              child: Padding(
+                padding: EdgeInsets.only(
+                    top: columnIndex == 0 ? 0 : columnIndex * 18),
+                child: Column(children: columns[columnIndex]),
+              ),
             );
           }),
         );
       },
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.eyebrow,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.9,
+            color: AppColors.pathwayAmber,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textMuted,
+            height: 1.35,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -114,6 +114,16 @@ class _MarketplaceTalentDetailScreenState
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Text(
+            'Talent Profile',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.9,
+              color: AppColors.pathwayAmber,
+            ),
+          ),
+          const SizedBox(height: 6),
           GlassCard(
             borderRadius: 16,
             padding: const EdgeInsets.all(16),
@@ -129,7 +139,7 @@ class _MarketplaceTalentDetailScreenState
                       Text(
                         vendorName,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -152,6 +162,8 @@ class _MarketplaceTalentDetailScreenState
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
           const SizedBox(height: 14),
           GlassCard(
             borderRadius: 16,
@@ -193,6 +205,8 @@ class _MarketplaceTalentDetailScreenState
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
           const SizedBox(height: 14),
           GlassCard(
             borderRadius: 16,
