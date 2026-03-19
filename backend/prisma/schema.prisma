@@ -60,6 +60,17 @@ enum AdReviewStatus {
   REJECTED
 }
 
+enum ServicePricingMode {
+  FIXED
+  STARTING_FROM
+}
+
+enum BoostReachLevel {
+  CURRENT_STATE
+  SELECTED_STATES
+  GLOBAL_COUNTRIES
+}
+
 enum BlockReasonCode {
   SPAM
   HARASSMENT
@@ -170,6 +181,12 @@ model User {
   readReceipts       GroupMessageReadReceipt[]
   safetyFlags        SafetyMetadataFlag[]
   breakGlassBundlesReported BreakGlassReportBundle[] @relation("BundleReporter")
+  vendorStudio        VendorStudio?
+  vendorServicePricing VendorServicePricing[] @relation("UserServicePricing")
+  promotedAds         PromotedAd[]
+  talentBroadcasts    TalentBroadcast[]
+  marketplaceApprovalEntries MarketplaceApproval[]
+  talentFeature       TalentFeature?
 }
 
 model Mission {
@@ -394,6 +411,8 @@ model MarketplaceApproval {
   reviewedAt        DateTime?
   createdAt         DateTime @default(now())
 
+  user              User     @relation(fields: [userId], references: [id])
+
   @@index([userId, status])
 }
 
@@ -403,6 +422,8 @@ model TalentFeature {
   isFeatured        Boolean  @default(false)
   updatedByAdminId  String
   updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id])
 }
 
 model AdModerationReview {
@@ -414,6 +435,73 @@ model AdModerationReview {
   reviewedByAdminId String?
   reviewedAt        DateTime?
   createdAt         DateTime @default(now())
+}
+
+model VendorStudio {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  category          String
+  profilePictureUrl String?
+  profileReelUrl    String?
+  galleryUrls       String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id])
+  servicePricing    VendorServicePricing[] @relation("StudioServicePricing")
+}
+
+model VendorServicePricing {
+  id                String            @id @default(cuid())
+  userId            String
+  serviceName       String
+  pricingMode       ServicePricingMode
+  amountUsd         Decimal           @db.Decimal(10, 2)
+  currency          String            @default("USD")
+  unitLabel         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  user              User              @relation("UserServicePricing", fields: [userId], references: [id], map: "VendorServicePricing_user_fkey")
+  vendorStudio      VendorStudio      @relation("StudioServicePricing", fields: [userId], references: [userId], map: "VendorServicePricing_studio_fkey")
+
+  @@index([userId, createdAt])
+}
+
+model PromotedAd {
+  id                String         @id @default(cuid())
+  userId            String
+  mediaUrl          String
+  headline          String?
+  reachLevel        BoostReachLevel
+  targetCountry     String?
+  targetStates      String[]
+  targetCountries   String[]
+  startDate         DateTime
+  endDate           DateTime
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  user              User           @relation(fields: [userId], references: [id])
+
+  @@index([isActive, startDate, endDate])
+  @@index([userId, createdAt])
+}
+
+model TalentBroadcast {
+  id                String   @id @default(cuid())
+  vendorUserId      String
+  vendorName        String
+  category          String?
+  profilePictureUrl String?
+  country           String
+  message           String
+  createdAt         DateTime @default(now())
+
+  vendor            User     @relation(fields: [vendorUserId], references: [id])
+
+  @@index([country, createdAt])
 }
 
 model AdminActionLog {

@@ -140,6 +140,28 @@ export const adminService = {
         targetEntity: 'MARKETPLACE_APPROVAL',
       },
     });
+
+    const vendor = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, displayName: true, country: true, profilePictureUrl: true },
+    });
+    const studio = await prisma.vendorStudio.findUnique({
+      where: { userId },
+      select: { category: true },
+    });
+
+    if (vendor?.country) {
+      await prisma.talentBroadcast.create({
+        data: {
+          vendorUserId: vendor.id,
+          vendorName: vendor.displayName,
+          category: studio?.category,
+          profilePictureUrl: vendor.profilePictureUrl,
+          country: vendor.country,
+          message: `New Talent Approved: ${vendor.displayName}${studio?.category != null ? ' · ' + studio.category : ''}`,
+        },
+      });
+    }
   },
 
   async grantMeritMarketplace({
@@ -172,6 +194,28 @@ export const adminService = {
         reason,
       },
     });
+
+    const vendor = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, displayName: true, country: true, profilePictureUrl: true },
+    });
+    const studio = await prisma.vendorStudio.findUnique({
+      where: { userId },
+      select: { category: true },
+    });
+
+    if (vendor?.country) {
+      await prisma.talentBroadcast.create({
+        data: {
+          vendorUserId: vendor.id,
+          vendorName: vendor.displayName,
+          category: studio?.category,
+          profilePictureUrl: vendor.profilePictureUrl,
+          country: vendor.country,
+          message: `New Talent Spotlight: ${vendor.displayName}${studio?.category != null ? ' · ' + studio.category : ''}`,
+        },
+      });
+    }
   },
 
   async setTalentFeatured({

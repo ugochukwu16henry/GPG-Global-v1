@@ -891,6 +891,327 @@ class BackendGateway {
         .toList(growable: false);
   }
 
+  Future<Map<String, dynamic>?> vendorStudio(String userId) async {
+    final data = await _query(
+      '''
+      query VendorStudio(${r'$'}userId: ID!) {
+        vendorStudio(userId: ${r'$'}userId) {
+          userId
+          vendorName
+          country
+          state
+          category
+          profilePictureUrl
+          profileReelUrl
+          galleryUrls
+          verified
+          servicePricing {
+            id
+            serviceName
+            pricingMode
+            amountUsd
+            currency
+            unitLabel
+            createdAt
+          }
+        }
+      }
+      ''',
+      variables: {'userId': userId},
+    );
+
+    return data['vendorStudio'] as Map<String, dynamic>?;
+  }
+
+  Future<List<Map<String, dynamic>>> marketplaceDirectory({
+    String? search,
+    String? country,
+    String? category,
+    int limit = 50,
+  }) async {
+    final data = await _query(
+      '''
+      query MarketplaceDirectory(
+        ${r'$'}search: String,
+        ${r'$'}country: String,
+        ${r'$'}category: String,
+        ${r'$'}limit: Int
+      ) {
+        marketplaceDirectory(search: ${r'$'}search, country: ${r'$'}country, category: ${r'$'}category, limit: ${r'$'}limit) {
+          userId
+          vendorName
+          country
+          state
+          category
+          profilePictureUrl
+          profileReelUrl
+          galleryUrls
+          verified
+          servicePricing {
+            id
+            serviceName
+            pricingMode
+            amountUsd
+            currency
+            unitLabel
+            createdAt
+          }
+        }
+      }
+      ''',
+      variables: {
+        'search': search,
+        'country': country,
+        'category': category,
+        'limit': limit,
+      },
+    );
+
+    final items = data['marketplaceDirectory'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> homeTalentBanners({
+    required String userId,
+    int limit = 20,
+  }) async {
+    final data = await _query(
+      '''
+      query HomeTalentBanners(${r'$'}userId: ID!, ${r'$'}limit: Int) {
+        homeTalentBanners(userId: ${r'$'}userId, limit: ${r'$'}limit) {
+          id
+          vendorUserId
+          vendorName
+          category
+          profilePictureUrl
+          country
+          message
+          createdAt
+        }
+      }
+      ''',
+      variables: {'userId': userId, 'limit': limit},
+    );
+
+    final items = data['homeTalentBanners'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> myPromotedAds({
+    required String userId,
+    int limit = 50,
+  }) async {
+    final data = await _query(
+      '''
+      query MyPromotedAds(${r'$'}userId: ID!, ${r'$'}limit: Int) {
+        myPromotedAds(userId: ${r'$'}userId, limit: ${r'$'}limit) {
+          id
+          userId
+          mediaUrl
+          headline
+          reachLevel
+          targetCountry
+          targetStates
+          targetCountries
+          startDate
+          endDate
+          isActive
+          createdAt
+        }
+      }
+      ''',
+      variables: {'userId': userId, 'limit': limit},
+    );
+
+    final items = data['myPromotedAds'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> upsertVendorStudio({
+    required String userId,
+    required String category,
+    String? profilePictureUrl,
+    String? profileReelUrl,
+    List<String>? galleryUrls,
+  }) async {
+    final data = await _query(
+      '''
+      mutation UpsertVendorStudio(
+        ${r'$'}userId: ID!,
+        ${r'$'}category: String!,
+        ${r'$'}profilePictureUrl: String,
+        ${r'$'}profileReelUrl: String,
+        ${r'$'}galleryUrls: [String!]
+      ) {
+        upsertVendorStudio(
+          userId: ${r'$'}userId,
+          category: ${r'$'}category,
+          profilePictureUrl: ${r'$'}profilePictureUrl,
+          profileReelUrl: ${r'$'}profileReelUrl,
+          galleryUrls: ${r'$'}galleryUrls
+        ) {
+          userId
+          vendorName
+          category
+          profilePictureUrl
+          profileReelUrl
+          galleryUrls
+          verified
+        }
+      }
+      ''',
+      variables: {
+        'userId': userId,
+        'category': category,
+        'profilePictureUrl': profilePictureUrl,
+        'profileReelUrl': profileReelUrl,
+        'galleryUrls': galleryUrls,
+      },
+    );
+
+    return data['upsertVendorStudio'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> upsertVendorServicePricing({
+    required String userId,
+    required String serviceName,
+    required String pricingMode,
+    required double amountUsd,
+    String currency = 'USD',
+    String? unitLabel,
+  }) async {
+    final data = await _query(
+      '''
+      mutation UpsertVendorServicePricing(
+        ${r'$'}userId: ID!,
+        ${r'$'}serviceName: String!,
+        ${r'$'}pricingMode: String!,
+        ${r'$'}amountUsd: Float!,
+        ${r'$'}currency: String,
+        ${r'$'}unitLabel: String
+      ) {
+        upsertVendorServicePricing(
+          userId: ${r'$'}userId,
+          serviceName: ${r'$'}serviceName,
+          pricingMode: ${r'$'}pricingMode,
+          amountUsd: ${r'$'}amountUsd,
+          currency: ${r'$'}currency,
+          unitLabel: ${r'$'}unitLabel
+        ) {
+          id
+          serviceName
+          pricingMode
+          amountUsd
+          currency
+          unitLabel
+          createdAt
+        }
+      }
+      ''',
+      variables: {
+        'userId': userId,
+        'serviceName': serviceName,
+        'pricingMode': pricingMode,
+        'amountUsd': amountUsd,
+        'currency': currency,
+        'unitLabel': unitLabel,
+      },
+    );
+
+    return data['upsertVendorServicePricing'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createPromotedAd({
+    required String userId,
+    required String mediaUrl,
+    String? headline,
+    required String reachLevel,
+    String? targetCountry,
+    List<String>? targetStates,
+    List<String>? targetCountries,
+    required String startDate,
+    required String endDate,
+  }) async {
+    final data = await _query(
+      '''
+      mutation CreatePromotedAd(
+        ${r'$'}userId: ID!,
+        ${r'$'}mediaUrl: String!,
+        ${r'$'}headline: String,
+        ${r'$'}reachLevel: String!,
+        ${r'$'}targetCountry: String,
+        ${r'$'}targetStates: [String!],
+        ${r'$'}targetCountries: [String!],
+        ${r'$'}startDate: String!,
+        ${r'$'}endDate: String!
+      ) {
+        createPromotedAd(
+          userId: ${r'$'}userId,
+          mediaUrl: ${r'$'}mediaUrl,
+          headline: ${r'$'}headline,
+          reachLevel: ${r'$'}reachLevel,
+          targetCountry: ${r'$'}targetCountry,
+          targetStates: ${r'$'}targetStates,
+          targetCountries: ${r'$'}targetCountries,
+          startDate: ${r'$'}startDate,
+          endDate: ${r'$'}endDate
+        ) {
+          id
+          userId
+          mediaUrl
+          headline
+          reachLevel
+          targetCountry
+          targetStates
+          targetCountries
+          startDate
+          endDate
+          isActive
+          createdAt
+        }
+      }
+      ''',
+      variables: {
+        'userId': userId,
+        'mediaUrl': mediaUrl,
+        'headline': headline,
+        'reachLevel': reachLevel,
+        'targetCountry': targetCountry,
+        'targetStates': targetStates,
+        'targetCountries': targetCountries,
+        'startDate': startDate,
+        'endDate': endDate,
+      },
+    );
+
+    return data['createPromotedAd'] as Map<String, dynamic>;
+  }
+
+  Future<bool> deactivatePromotedAd({
+    required String userId,
+    required String promotedAdId,
+  }) async {
+    final data = await _query(
+      '''
+      mutation DeactivatePromotedAd(${r'$'}userId: ID!, ${r'$'}promotedAdId: ID!) {
+        deactivatePromotedAd(userId: ${r'$'}userId, promotedAdId: ${r'$'}promotedAdId)
+      }
+      ''',
+      variables: {
+        'userId': userId,
+        'promotedAdId': promotedAdId,
+      },
+    );
+
+    return data['deactivatePromotedAd'] as bool;
+  }
+
   Future<void> blockUser({
     required String blockerId,
     required String blockedId,

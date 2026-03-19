@@ -11,6 +11,7 @@ import { gatheringService } from '../services/gatheringService.js';
 import { safetyService } from '../services/safetyService.js';
 import { sessionService } from '../services/sessionService.js';
 import { moderatorInviteService } from '../services/moderatorInviteService.js';
+import { marketplaceTalentService } from '../services/marketplaceTalentService.js';
 import { storageService, BucketName } from '../services/storageService.js';
 
 export const typeDefs = `
@@ -220,6 +221,57 @@ export const typeDefs = `
     prayerLikes: Int!
     reshareCount: Int!
     comments: [FeedComment!]!
+    isBoosted: Boolean!
+    promotedAdId: ID
+  }
+
+  type VendorServicePrice {
+    id: ID!
+    serviceName: String!
+    pricingMode: String!
+    amountUsd: Float!
+    currency: String!
+    unitLabel: String
+    createdAt: String!
+  }
+
+  type VendorStudio {
+    userId: ID!
+    vendorName: String!
+    country: String
+    state: String
+    category: String!
+    profilePictureUrl: String
+    profileReelUrl: String
+    galleryUrls: [String!]!
+    verified: Boolean!
+    servicePricing: [VendorServicePrice!]!
+  }
+
+  type TalentBanner {
+    id: ID!
+    vendorUserId: ID!
+    vendorName: String!
+    category: String
+    profilePictureUrl: String
+    country: String!
+    message: String!
+    createdAt: String!
+  }
+
+  type PromotedAd {
+    id: ID!
+    userId: ID!
+    mediaUrl: String!
+    headline: String
+    reachLevel: String!
+    targetCountry: String
+    targetStates: [String!]!
+    targetCountries: [String!]!
+    startDate: String!
+    endDate: String!
+    isActive: Boolean!
+    createdAt: String!
   }
 
   type BlockedAccount {
@@ -373,6 +425,10 @@ export const typeDefs = `
     adModerationReviews(limit: Int = 50): [AdModerationReviewRecord!]!
     userDisciplineStates(limit: Int = 100): [UserDisciplineRecord!]!
     bannedIdentities(limit: Int = 100): [BannedIdentityRecord!]!
+    vendorStudio(userId: ID!): VendorStudio
+    marketplaceDirectory(search: String, country: String, category: String, limit: Int = 50): [VendorStudio!]!
+    homeTalentBanners(userId: ID!, limit: Int = 20): [TalentBanner!]!
+    myPromotedAds(userId: ID!, limit: Int = 50): [PromotedAd!]!
     readSensitiveField(ownerUserId: ID!, field: SensitiveField!): String
   }
 
@@ -441,6 +497,20 @@ export const typeDefs = `
     adminGrantMeritMarketplace(adminUserId: ID!, userId: ID!, certificateTitle: String!, reason: String!): Boolean!
     adminSetTalentFeatured(adminUserId: ID!, userId: ID!, isFeatured: Boolean!): Boolean!
     adminReviewAd(adminUserId: ID!, adId: ID!, targeting: String!, approved: Boolean!, note: String): Boolean!
+    upsertVendorStudio(userId: ID!, category: String!, profilePictureUrl: String, profileReelUrl: String, galleryUrls: [String!]): VendorStudio!
+    upsertVendorServicePricing(userId: ID!, serviceName: String!, pricingMode: String!, amountUsd: Float!, currency: String = "USD", unitLabel: String): VendorServicePrice!
+    createPromotedAd(
+      userId: ID!
+      mediaUrl: String!
+      headline: String
+      reachLevel: String!
+      targetCountry: String
+      targetStates: [String!]
+      targetCountries: [String!]
+      startDate: String!
+      endDate: String!
+    ): PromotedAd!
+    deactivatePromotedAd(userId: ID!, promotedAdId: ID!): Boolean!
 
     blockUser(blockerId: ID!, blockedId: ID!, reasonCode: BlockReasonCode): Boolean!
     unblockUser(blockerId: ID!, blockedId: ID!): Boolean!
@@ -569,17 +639,19 @@ export const resolvers = {
   },
 
   FeedPost: {
-    warmLikes: (parent: any) => parent.reactions.filter((x: any) => x.kind === 'WARM_HEART').length,
-    prayerLikes: (parent: any) => parent.reactions.filter((x: any) => x.kind === 'PRAYER_HANDS').length,
-    reshareCount: (parent: any) => parent.reshares.length,
+    warmLikes: (parent: any) => (parent.reactions ?? []).filter((x: any) => x.kind === 'WARM_HEART').length,
+    prayerLikes: (parent: any) => (parent.reactions ?? []).filter((x: any) => x.kind === 'PRAYER_HANDS').length,
+    reshareCount: (parent: any) => (parent.reshares ?? []).length,
     author: (parent: any) => parent.author,
     comments: (parent: any) =>
-      parent.comments.map((comment: any) => ({
+      (parent.comments ?? []).map((comment: any) => ({
         id: comment.id,
         body: comment.body,
         timestampSeconds: comment.timestampSeconds,
         author: comment.user,
       })),
+    isBoosted: (parent: any) => parent.isBoosted === true,
+    promotedAdId: (parent: any) => parent.promotedAdId ?? null,
   },
 
   Query: {
@@ -749,6 +821,74 @@ export const resolvers = {
       const rows = await adminService.bannedIdentities(args.limit ?? 100);
       return rows.map((row: any) => ({
         ...row,
+        createdAt: row.createdAt.toISOString(),
+      }));
+    },
+    vendorStudio: async (_: unknown, args: { userId: string }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin', 'moderator']);
+      const studio = await marketplaceTalentService.vendorStudio(args.userId);
+      if (!studio) return null;
+      return {
+        userId: studio.userId,
+        vendorName: studio.user.displayName,
+        country: studio.user.country,
+        state: studio.user.state,
+        category: studio.category,
+        profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
+        profileReelUrl: studio.profileReelUrl,
+        galleryUrls: studio.galleryUrls,
+        verified: true,
+        servicePricing: studio.servicePricing.map((price: any) => ({
+          ...price,
+          amountUsd: Number(price.amountUsd),
+          createdAt: price.createdAt.toISOString(),
+        })),
+      };
+    },
+    marketplaceDirectory: async (
+      _: unknown,
+      args: { search?: string; country?: string; category?: string; limit?: number },
+      context: RequestContext,
+    ) => {
+      requireAuthenticated(context);
+      const rows = await marketplaceTalentService.marketplaceDirectory({
+        search: args.search,
+        country: args.country,
+        category: args.category,
+        limit: args.limit ?? 50,
+      });
+      return rows.map((studio: any) => ({
+        userId: studio.userId,
+        vendorName: studio.user.displayName,
+        country: studio.user.country,
+        state: studio.user.state,
+        category: studio.category,
+        profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
+        profileReelUrl: studio.profileReelUrl,
+        galleryUrls: studio.galleryUrls,
+        verified: true,
+        servicePricing: studio.servicePricing.map((price: any) => ({
+          ...price,
+          amountUsd: Number(price.amountUsd),
+          createdAt: price.createdAt.toISOString(),
+        })),
+      }));
+    },
+    homeTalentBanners: async (_: unknown, args: { userId: string; limit?: number }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin', 'moderator']);
+      const rows = await marketplaceTalentService.homeTalentBanners(args.userId, args.limit ?? 20);
+      return rows.map((row: any) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      }));
+    },
+    myPromotedAds: async (_: unknown, args: { userId: string; limit?: number }, context: RequestContext) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
+      const rows = await marketplaceTalentService.myPromotedAds(args.userId, args.limit ?? 50);
+      return rows.map((row: any) => ({
+        ...row,
+        startDate: row.startDate.toISOString(),
+        endDate: row.endDate.toISOString(),
         createdAt: row.createdAt.toISOString(),
       }));
     },
@@ -1050,6 +1190,88 @@ export const resolvers = {
       }
       await adminService.reviewAd(args);
       return true;
+    },
+    upsertVendorStudio: async (
+      _: unknown,
+      args: {
+        userId: string;
+        category: string;
+        profilePictureUrl?: string;
+        profileReelUrl?: string;
+        galleryUrls?: string[];
+      },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
+      const studio = await marketplaceTalentService.upsertVendorStudio(args);
+      return {
+        userId: studio.userId,
+        vendorName: studio.user.displayName,
+        country: studio.user.country,
+        state: studio.user.state,
+        category: studio.category,
+        profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
+        profileReelUrl: studio.profileReelUrl,
+        galleryUrls: studio.galleryUrls,
+        verified: true,
+        servicePricing: studio.servicePricing.map((price: any) => ({
+          ...price,
+          amountUsd: Number(price.amountUsd),
+          createdAt: price.createdAt.toISOString(),
+        })),
+      };
+    },
+    upsertVendorServicePricing: async (
+      _: unknown,
+      args: {
+        userId: string;
+        serviceName: string;
+        pricingMode: 'FIXED' | 'STARTING_FROM';
+        amountUsd: number;
+        currency?: string;
+        unitLabel?: string;
+      },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
+      const row = await marketplaceTalentService.upsertVendorServicePricing(args);
+      return {
+        ...row,
+        amountUsd: Number(row.amountUsd),
+        createdAt: row.createdAt.toISOString(),
+      };
+    },
+    createPromotedAd: async (
+      _: unknown,
+      args: {
+        userId: string;
+        mediaUrl: string;
+        headline?: string;
+        reachLevel: 'CURRENT_STATE' | 'SELECTED_STATES' | 'GLOBAL_COUNTRIES';
+        targetCountry?: string;
+        targetStates?: string[];
+        targetCountries?: string[];
+        startDate: string;
+        endDate: string;
+      },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
+      const row = await marketplaceTalentService.createPromotedAd(args);
+      return {
+        ...row,
+        startDate: row.startDate.toISOString(),
+        endDate: row.endDate.toISOString(),
+        createdAt: row.createdAt.toISOString(),
+      };
+    },
+    deactivatePromotedAd: async (
+      _: unknown,
+      args: { userId: string; promotedAdId: string },
+      context: RequestContext,
+    ) => {
+      requireSelfOrRole(context, args.userId, ['admin']);
+      return marketplaceTalentService.deactivatePromotedAd(args);
     },
     blockUser: async (
       _: unknown,

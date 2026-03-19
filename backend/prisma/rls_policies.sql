@@ -46,6 +46,10 @@ alter table "public"."GroupMessageReadReceipt"    enable row level security;
 alter table "public"."Mission"                    enable row level security;
 alter table "public"."User"                       enable row level security;
 alter table "public"."ChatMessage"                enable row level security;
+alter table "public"."VendorStudio"               enable row level security;
+alter table "public"."VendorServicePricing"       enable row level security;
+alter table "public"."PromotedAd"                 enable row level security;
+alter table "public"."TalentBroadcast"            enable row level security;
 
 -- -------------------------------------------------------------
 -- STEP 2: Drop existing policies (safe to run multiple times)
@@ -298,5 +302,37 @@ create policy "break_glass_evidence_message_deny_all"
 
 create policy "admin_action_log_deny_all"
   on "public"."AdminActionLog" as restrictive for all
+  to authenticated, anon
+  using (false);
+
+-- -------------------------------------------------------------
+-- VendorStudio  (public marketplace directory — authenticated can read)
+-- -------------------------------------------------------------
+create policy "vendor_studio_authenticated_read"
+  on "public"."VendorStudio" for select
+  to authenticated
+  using (true);
+
+-- -------------------------------------------------------------
+-- VendorServicePricing  (price list shown in directory — authenticated can read)
+-- -------------------------------------------------------------
+create policy "vendor_service_pricing_authenticated_read"
+  on "public"."VendorServicePricing" for select
+  to authenticated
+  using (true);
+
+-- -------------------------------------------------------------
+-- PromotedAd  (internal ad engine — backend service_role only)
+-- -------------------------------------------------------------
+create policy "promoted_ad_deny_all"
+  on "public"."PromotedAd" as restrictive for all
+  to authenticated, anon
+  using (false);
+
+-- -------------------------------------------------------------
+-- TalentBroadcast  (internal dome notifications — backend service_role only)
+-- -------------------------------------------------------------
+create policy "talent_broadcast_deny_all"
+  on "public"."TalentBroadcast" as restrictive for all
   to authenticated, anon
   using (false);

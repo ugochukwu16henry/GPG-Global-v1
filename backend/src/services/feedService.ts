@@ -121,6 +121,13 @@ export const feedService = {
       ? new Set<string>()
       : await boundaryService.blockedUserIdsForViewer(viewerUserId);
 
+    const viewer = viewerUserId == null
+      ? null
+      : await prisma.user.findUnique({
+          where: { id: viewerUserId },
+          select: { country: true, state: true },
+        });
+
     const rows = await prisma.post.findMany({
       take: limit,
       where: {
@@ -156,14 +163,104 @@ export const feedService = {
       },
     });
 
+    const promoted = viewer?.country
+      ? await prisma.promotedAd.findMany({
+          where: {
+            isActive: true,
+            startDate: { lte: new Date() },
+            endDate: { gte: new Date() },
+            userId: blockedIds.size == 0 ? undefined : { notIn: Array.from(blockedIds) },
+            user: {
+              marketplaceApprovalEntries: {
+                some: {
+                  OR: [{ status: 'APPROVED' }, { status: 'MERIT_GRANTED' }],
+                },
+              },
+            },
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                displayName: true,
+                profilePictureUrl: true,
+                country: true,
+                state: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: Math.max(1, Math.ceil(limit / 3)),
+        })
+      : [];
+
+    const studioRows = promoted.length == 0
+      ? []
+      : await prisma.vendorStudio.findMany({
+          where: {
+            userId: {
+              in: promoted.map((ad) => ad.userId),
+            },
+          },
+        });
+    const studioByUserId = new Map(studioRows.map((row) => [row.userId, row]));
+
+    const promotedMatched = promoted.filter((ad) => {
+      const country = viewer?.country;
+      const state = viewer?.state;
+      if (!country) return false;
+
+      if (ad.reachLevel == 'CURRENT_STATE') {
+        return ad.targetCountry == country && ad.targetStates.includes(state ?? '');
+      }
+
+      if (ad.reachLevel == 'SELECTED_STATES') {
+        return ad.targetCountry == country && ad.targetStates.includes(state ?? '');
+      }
+
+      if (ad.reachLevel == 'GLOBAL_COUNTRIES') {
+        return ad.targetCountries.includes(country);
+      }
+
+      return false;
+    });
+
+    const promotedPosts = promotedMatched.map((ad) => {
+      const studio = studioByUserId.get(ad.userId);
+      return {
+      id: `boost-${ad.id}`,
+      textBody: ad.headline ?? `Featured talent: ${ad.user.displayName}`,
+      mediaUrl:
+        ad.mediaUrl ||
+        studio?.profileReelUrl ||
+        studio?.galleryUrls?.[0] ||
+        null,
+      skillHighlight: studio?.category ?? null,
+      videoCodec: null,
+      sourceResolution: null,
+      availableResolutions: [],
+      captions: [],
+      moderationTags: ['BOOSTED'],
+      isHiddenPendingReview: false,
+      copyrightBlocked: false,
+      author: ad.user,
+      reactions: [],
+      comments: [],
+      reshares: [],
+      isBoosted: true,
+      promotedAdId: ad.id,
+    };});
+
     if (blockedIds.size == 0) {
-      return rows;
+      return [...promotedPosts, ...rows].slice(0, limit);
     }
 
-    return rows
+    const filteredRows = rows
       .map((post) => ({
         ...post,
         comments: post.comments.filter((comment) => !blockedIds.has(comment.userId)),
       }));
+
+    return [...promotedPosts, ...filteredRows].slice(0, limit);
   },
 };

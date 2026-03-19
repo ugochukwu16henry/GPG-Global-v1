@@ -10,6 +10,7 @@ import 'features/home/screens/app_flow_logic_map_screen.dart';
 import 'features/home/screens/deep_link_target_screen.dart';
 import 'features/home/screens/marketplace_success_screen.dart';
 import 'features/home/screens/user_app_shell_screen.dart';
+import 'features/home/screens/vendor_studio_screen.dart';
 import 'features/moderator/screens/moderator_dashboard_screen.dart';
 
 void main() {
@@ -132,6 +133,14 @@ class GpgGlobalApp extends ConsumerWidget {
       }
       return MaterialPageRoute(
           builder: (_) => const UserAppShellScreen(), settings: settings);
+    }
+
+    if (uri.path == '/vendor-studio') {
+      if (session.role != AppRole.user) {
+        return denyAccess();
+      }
+      return MaterialPageRoute(
+          builder: (_) => const VendorStudioScreen(), settings: settings);
     }
 
     if (uri.path == '/moderator-dashboard') {
