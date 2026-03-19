@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 
 /// Glassmorphism card with blur and light border.
 class GlassCard extends StatelessWidget {
@@ -34,9 +33,9 @@ class GlassCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryNavy.withValues(alpha: 0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: const Color(0x00000000).withValues(alpha: 0.05),
+                blurRadius: 30,
+                offset: const Offset(0, 4),
               ),
             ],
           ),

@@ -9,10 +9,14 @@ class CustomNavBar extends StatelessWidget {
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.marketplaceIndex = 2,
+    this.elevateMarketplace = true,
   });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final int marketplaceIndex;
+  final bool elevateMarketplace;
 
   static const List<_NavEntry> _items = [
     _NavEntry(NavItem.home, Icons.home_rounded, 'Home'),
@@ -44,34 +48,53 @@ class CustomNavBar extends StatelessWidget {
             children: List.generate(_items.length, (index) {
               final entry = _items[index];
               final selected = currentIndex == index;
+              final isMarketplace = index == marketplaceIndex;
               return Expanded(
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () => onTap(index),
                     borderRadius: BorderRadius.circular(12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          entry.icon,
-                          size: 24,
-                          color: selected
-                              ? AppColors.primaryNavy
-                              : AppColors.textMuted,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          entry.label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                            color: selected
-                                ? AppColors.primaryNavy
-                                : AppColors.textMuted,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      transform: elevateMarketplace && isMarketplace
+                          ? Matrix4.translationValues(0, selected ? -10 : -8, 0)
+                          : Matrix4.translationValues(0, 0, 0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: isMarketplace
+                                ? BoxDecoration(
+                                    color: selected
+                                        ? AppColors.pathwayAmber.withValues(alpha: 0.95)
+                                        : AppColors.pathwayAmber.withValues(alpha: 0.25),
+                                    borderRadius: BorderRadius.circular(999),
+                                  )
+                                : const BoxDecoration(),
+                            child: Icon(
+                              entry.icon,
+                              size: 22,
+                              color: isMarketplace
+                                  ? AppColors.primaryNavy
+                                  : (selected ? AppColors.primaryNavy : AppColors.textMuted),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            entry.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                              color: selected ? AppColors.primaryNavy : AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

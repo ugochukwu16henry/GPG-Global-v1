@@ -1,8 +1,10 @@
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../backend/providers/backend_live_providers.dart';
+import '../../storage/widgets/file_upload_button.dart';
 import '../screens/privacy_safety_screen.dart';
 import '../providers/mock_data_provider.dart';
 import 'glass_card.dart';
@@ -23,7 +25,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 1));
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 1));
     _phoneController = TextEditingController();
     _otpController = TextEditingController();
   }
@@ -38,9 +41,11 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
         userId: userId,
         displayName: profile.displayName,
         isMember: profile.memberStatusLabel == 'Member',
-        missionId: 'demo-mission-id',
+        missionId: null,
         servedMission: profile.servedMission,
-        pathwayStatus: profile.pathwayStatus == PathwayStatus.connect ? 'CONNECT' : 'DEGREE',
+        pathwayStatus: profile.pathwayStatus == PathwayStatus.connect
+            ? 'CONNECT'
+            : 'DEGREE',
         isPathwayConnect: profile.isPathwayConnect,
         isDegree: profile.isDegree,
         isAlumni: profile.isAlumni,
@@ -49,7 +54,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
         state: profile.state,
         lga: profile.lga,
         relationshipStatus:
-            profile.relationshipStatus == RelationshipStatus.single ? 'SINGLE' : 'MARRIED',
+            profile.relationshipStatus == RelationshipStatus.single
+                ? 'SINGLE'
+                : 'MARRIED',
         gender: profile.gender == Gender.male ? 'MALE' : 'FEMALE',
         allowsBirthdayBroadcast: profile.allowsBirthdayBroadcast,
         safeSearchFemaleOnly: profile.safeSearchFemaleOnly,
@@ -65,7 +72,13 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
     }
   }
 
-  Future<void> _persistVisibility(String fieldKey, VisibilityLevel level) async {
+  Future<void> _persistProfilePicture(String url) async {
+    ref.read(profileProvider.notifier).setProfilePictureUrl(url);
+    await _persistProfile();
+  }
+
+  Future<void> _persistVisibility(
+      String fieldKey, VisibilityLevel level) async {
     final gateway = ref.read(backendGatewayProvider);
     final userId = ref.read(backendUserIdProvider);
     final visibility = switch (level) {
@@ -123,7 +136,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
   }
 
   void _onToggleStatus() {
-    final wasConnect = ref.read(profileProvider).pathwayStatus == PathwayStatus.connect;
+    final wasConnect =
+        ref.read(profileProvider).pathwayStatus == PathwayStatus.connect;
     ref.read(profileProvider.notifier).toggleStatus();
     _persistProfile();
     if (wasConnect) {
@@ -135,6 +149,7 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final auth = ref.watch(backendAuthControllerProvider);
+    final storageService = ref.watch(storageServiceProvider);
     final compact = MediaQuery.sizeOf(context).width < 380;
     return Stack(
       alignment: Alignment.topCenter,
@@ -147,18 +162,30 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.pathwayAmber.withValues(alpha: 0.3),
-                    child: Text(
-                      profile.displayName.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.primaryNavy,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
+                  if (storageService != null)
+                    AvatarUploadCircle(
+                      storageService: storageService,
+                      displayName: profile.displayName,
+                      currentAvatarUrl: profile.profilePictureUrl,
+                      radius: 22,
+                      onUploaded: (result) => _persistProfilePicture(
+                        result.publicOrSignedUrl,
+                      ),
+                    )
+                  else
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor:
+                          AppColors.pathwayAmber.withValues(alpha: 0.3),
+                      child: Text(
+                        profile.displayName.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.primaryNavy,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -202,7 +229,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  _pill('Location', '${profile.country}, ${profile.state}, ${profile.lga}'),
+                  _pill('Location',
+                      '${profile.country}, ${profile.state}, ${profile.lga}'),
                   _pill('Relationship', profile.relationshipStatus.name),
                   _pill('Gender', profile.gender.name),
                   _pill('Age', profile.age?.toString() ?? 'N/A'),
@@ -211,7 +239,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: profile.pathwayStatus == PathwayStatus.degree
                       ? AppColors.pathwayAmber.withValues(alpha: 0.2)
@@ -244,7 +273,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                           label: 'Pathway Connect',
                           value: profile.isPathwayConnect,
                           onChanged: (value) {
-                            ref.read(profileProvider.notifier).setPathwayJourney(
+                            ref
+                                .read(profileProvider.notifier)
+                                .setPathwayJourney(
                                   isPathwayConnect: value,
                                 );
                             _persistProfile();
@@ -255,7 +286,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                           label: 'Degree',
                           value: profile.isDegree,
                           onChanged: (value) {
-                            ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
+                            ref
+                                .read(profileProvider.notifier)
+                                .setPathwayJourney(isDegree: value);
                             _persistProfile();
                           },
                         ),
@@ -264,7 +297,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                           label: 'Alumni',
                           value: profile.isAlumni,
                           onChanged: (value) {
-                            ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
+                            ref
+                                .read(profileProvider.notifier)
+                                .setPathwayJourney(isAlumni: value);
                             _persistProfile();
                           },
                         ),
@@ -277,7 +312,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                             label: 'Pathway Connect',
                             value: profile.isPathwayConnect,
                             onChanged: (value) {
-                              ref.read(profileProvider.notifier).setPathwayJourney(
+                              ref
+                                  .read(profileProvider.notifier)
+                                  .setPathwayJourney(
                                     isPathwayConnect: value,
                                   );
                               _persistProfile();
@@ -290,7 +327,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                             label: 'Degree',
                             value: profile.isDegree,
                             onChanged: (value) {
-                              ref.read(profileProvider.notifier).setPathwayJourney(isDegree: value);
+                              ref
+                                  .read(profileProvider.notifier)
+                                  .setPathwayJourney(isDegree: value);
                               _persistProfile();
                             },
                           ),
@@ -301,7 +340,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                             label: 'Alumni',
                             value: profile.isAlumni,
                             onChanged: (value) {
-                              ref.read(profileProvider.notifier).setPathwayJourney(isAlumni: value);
+                              ref
+                                  .read(profileProvider.notifier)
+                                  .setPathwayJourney(isAlumni: value);
                               _persistProfile();
                             },
                           ),
@@ -322,9 +363,18 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  _privacyChip('Blood Group', profile.visibilityByField['bloodGroup'] ?? VisibilityLevel.onlyMe),
-                  _privacyChip('Genotype', profile.visibilityByField['genotype'] ?? VisibilityLevel.onlyMe),
-                  _privacyChip('Age', profile.visibilityByField['age'] ?? VisibilityLevel.onlyMe),
+                  _privacyChip(
+                      'Blood Group',
+                      profile.visibilityByField['bloodGroup'] ??
+                          VisibilityLevel.onlyMe),
+                  _privacyChip(
+                      'Genotype',
+                      profile.visibilityByField['genotype'] ??
+                          VisibilityLevel.onlyMe),
+                  _privacyChip(
+                      'Age',
+                      profile.visibilityByField['age'] ??
+                          VisibilityLevel.onlyMe),
                 ],
               ),
               const SizedBox(height: 8),
@@ -335,10 +385,13 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                           label: 'Female Safety Mode',
                           value: profile.safeSearchFemaleOnly,
                           onChanged: (value) {
-                            ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
+                            ref
+                                .read(profileProvider.notifier)
+                                .setSafetyMode(femaleOnly: value);
                             _persistSafetyMode(
                               femaleOnly: value,
-                              verifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
+                              verifiedMembersOnly:
+                                  profile.safeSearchVerifiedMembersOnly,
                             );
                           },
                         ),
@@ -365,10 +418,13 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                             label: 'Female Safety Mode',
                             value: profile.safeSearchFemaleOnly,
                             onChanged: (value) {
-                              ref.read(profileProvider.notifier).setSafetyMode(femaleOnly: value);
+                              ref
+                                  .read(profileProvider.notifier)
+                                  .setSafetyMode(femaleOnly: value);
                               _persistSafetyMode(
                                 femaleOnly: value,
-                                verifiedMembersOnly: profile.safeSearchVerifiedMembersOnly,
+                                verifiedMembersOnly:
+                                    profile.safeSearchVerifiedMembersOnly,
                               );
                             },
                           ),
@@ -432,7 +488,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                               ? null
                               : () {
                                   ref
-                                      .read(backendAuthControllerProvider.notifier)
+                                      .read(backendAuthControllerProvider
+                                          .notifier)
                                       .sendOtp(_phoneController.text.trim());
                                 },
                           child: const Text('Send OTP'),
@@ -458,7 +515,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                               ? null
                               : () {
                                   ref
-                                      .read(backendAuthControllerProvider.notifier)
+                                      .read(backendAuthControllerProvider
+                                          .notifier)
                                       .sendOtp(_phoneController.text.trim());
                                 },
                           child: const Text('Send OTP'),
@@ -472,7 +530,9 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                   onPressed: auth.isLoading
                       ? null
                       : () {
-                          ref.read(backendAuthControllerProvider.notifier).verifyOtp(
+                          ref
+                              .read(backendAuthControllerProvider.notifier)
+                              .verifyOtp(
                                 phone: _phoneController.text.trim(),
                                 otpCode: _otpController.text.trim(),
                               );
@@ -484,21 +544,24 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                 const SizedBox(height: 4),
                 Text(
                   'Dev OTP preview: ${auth.devOtpPreview}',
-                  style: const TextStyle(fontSize: 10, color: AppColors.pathwayAmber),
+                  style: const TextStyle(
+                      fontSize: 10, color: AppColors.pathwayAmber),
                 ),
               ],
               if (auth.message != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   auth.message!,
-                  style: const TextStyle(fontSize: 10, color: AppColors.stewardshipGreen),
+                  style: const TextStyle(
+                      fontSize: 10, color: AppColors.stewardshipGreen),
                 ),
               ],
               if (auth.error != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   auth.error!,
-                  style: const TextStyle(fontSize: 10, color: AppColors.warmCrimson),
+                  style: const TextStyle(
+                      fontSize: 10, color: AppColors.warmCrimson),
                 ),
               ],
               const SizedBox(height: 8),
@@ -522,7 +585,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
                   onTap: _onToggleStatus,
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                     decoration: BoxDecoration(
                       color: AppColors.primaryNavy.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(10),
@@ -673,7 +737,8 @@ class _ProfileCardState extends ConsumerState<ProfileCard> {
             const SizedBox(width: 4),
             Text(
               '$field · $label',
-              style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  fontSize: 10, color: color, fontWeight: FontWeight.w600),
             ),
           ],
         ),

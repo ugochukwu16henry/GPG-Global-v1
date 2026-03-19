@@ -66,7 +66,6 @@ class _FileUploadButtonState extends State<FileUploadButton> {
 
   _PickMode get _pickMode {
     if (widget.bucket == StorageBucket.avatars) return _PickMode.image;
-    if (widget.bucket == StorageBucket.media) return _PickMode.image;
     return _PickMode.document;
   }
 
@@ -97,10 +96,23 @@ class _FileUploadButtonState extends State<FileUploadButton> {
         mimeType = lookupMimeType(fileName) ?? 'image/jpeg';
       } else {
         // Document / video via file_picker
+        final defaultMediaExtensions = <String>[
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'mp4',
+          'mov',
+          'm4v',
+          'webm',
+        ];
+        final extensions = widget.allowedExtensions ??
+            (widget.bucket == StorageBucket.media
+                ? defaultMediaExtensions
+                : null);
         final result = await FilePicker.platform.pickFiles(
-          type:
-              widget.allowedExtensions != null ? FileType.custom : FileType.any,
-          allowedExtensions: widget.allowedExtensions,
+          type: extensions != null ? FileType.custom : FileType.any,
+          allowedExtensions: extensions,
           withData: true,
         );
         if (result == null || result.files.isEmpty) return;

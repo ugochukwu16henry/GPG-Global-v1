@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../auth/providers/session_provider.dart';
 import '../../backend/providers/backend_live_providers.dart';
-import '../../admin/screens/admin_command_center_screen.dart';
 import '../widgets/custom_nav_bar.dart';
 import '../widgets/g_nexus_logo.dart';
 import '../widgets/gathering_feed.dart';
@@ -18,7 +18,8 @@ class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
 
   @override
-  ConsumerState<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+  ConsumerState<HomeDashboardScreen> createState() =>
+      _HomeDashboardScreenState();
 }
 
 class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
@@ -113,6 +114,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
 
   Widget _buildHeader(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 760;
+    final session = ref.watch(sessionControllerProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -162,46 +164,44 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
             runSpacing: 8,
             alignment: compact ? WrapAlignment.start : WrapAlignment.end,
             children: [
-              InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AdminCommandCenterScreen(),
+              if (session.role == AppRole.admin)
+                InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () =>
+                      Navigator.of(context).pushNamed('/admin-dashboard'),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryNavy.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryNavy.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GNexusLogo(
-                        size: 20,
-                        variant: LogoSurfaceVariant.controlRoomMonochrome,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Control Room',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GNexusLogo(
+                          size: 20,
+                          variant: LogoSurfaceVariant.controlRoomMonochrome,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 6),
+                        Text(
+                          'Control Room',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => Navigator.of(context).pushNamed('/app-flow-map'),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.pathwayAmber.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
@@ -209,7 +209,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.hub_rounded, size: 16, color: AppColors.primaryNavy),
+                      Icon(Icons.hub_rounded,
+                          size: 16, color: AppColors.primaryNavy),
                       SizedBox(width: 6),
                       Text(
                         'Flow Map',

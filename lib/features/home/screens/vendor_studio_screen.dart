@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../backend/providers/backend_live_providers.dart';
+import '../../storage/services/storage_service.dart';
+import '../../storage/widgets/file_upload_button.dart';
 
 class VendorStudioScreen extends ConsumerStatefulWidget {
   const VendorStudioScreen({super.key});
@@ -28,6 +30,7 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
   String _reachLevel = 'CURRENT_STATE';
   bool _isLoading = false;
   String? _error;
+  String? _infoMessage;
   Map<String, dynamic>? _studio;
   List<Map<String, dynamic>> _ads = const [];
 
@@ -58,6 +61,7 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _infoMessage = null;
     });
     try {
       final gateway = ref.read(backendGatewayProvider);
@@ -91,6 +95,7 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _infoMessage = null;
     });
     try {
       final gateway = ref.read(backendGatewayProvider);
@@ -118,6 +123,7 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _infoMessage = null;
     });
     try {
       final gateway = ref.read(backendGatewayProvider);
@@ -142,6 +148,7 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _infoMessage = null;
     });
     try {
       final gateway = ref.read(backendGatewayProvider);
@@ -173,6 +180,7 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final storageService = ref.watch(storageServiceProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vendor Studio'),
@@ -191,6 +199,12 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(_error!, style: const TextStyle(color: Colors.red)),
             ),
+          if (_infoMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(_infoMessage!,
+                  style: const TextStyle(color: Colors.green)),
+            ),
           if (_isLoading) const LinearProgressIndicator(),
           const SizedBox(height: 12),
           Text(_studio == null
@@ -200,17 +214,56 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
           const Text('Studio Setup',
               style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
+          if (storageService != null)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FileUploadButton(
+                  storageService: storageService,
+                  bucket: StorageBucket.media,
+                  label: 'Upload Profile Reel',
+                  icon: Icons.video_library_outlined,
+                  allowedExtensions: const ['mp4', 'mov', 'm4v', 'webm'],
+                  onUploaded: (result) {
+                    setState(() {
+                      _reelController.text = result.path;
+                      _infoMessage = 'Profile reel uploaded to storage.';
+                    });
+                  },
+                ),
+                FileUploadButton(
+                  storageService: storageService,
+                  bucket: StorageBucket.media,
+                  label: 'Upload Gallery Image',
+                  icon: Icons.photo_library_outlined,
+                  allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp'],
+                  onUploaded: (result) {
+                    setState(() {
+                      _galleryController.text = _galleryController.text
+                              .trim()
+                              .isEmpty
+                          ? result.path
+                          : '${_galleryController.text.trim()}, ${result.path}';
+                      _infoMessage = 'Gallery image uploaded to storage.';
+                    });
+                  },
+                ),
+              ],
+            ),
+          if (storageService != null) const SizedBox(height: 8),
           TextField(
               controller: _categoryController,
               decoration: const InputDecoration(
                   labelText: 'Category (e.g. Electrician)')),
           TextField(
               controller: _reelController,
-              decoration: const InputDecoration(labelText: 'Profile Reel URL')),
+              decoration:
+                  const InputDecoration(labelText: 'Profile Reel Path / URL')),
           TextField(
               controller: _galleryController,
               decoration: const InputDecoration(
-                  labelText: 'Gallery URLs (comma separated)')),
+                  labelText: 'Gallery Paths / URLs (comma separated)')),
           const SizedBox(height: 8),
           FilledButton(
               onPressed: _isLoading ? null : _saveStudio,
@@ -244,9 +297,36 @@ class _VendorStudioScreenState extends ConsumerState<VendorStudioScreen> {
           const Text('Boost My Talent',
               style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
+          if (storageService != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: FileUploadButton(
+                storageService: storageService,
+                bucket: StorageBucket.media,
+                label: 'Upload Boost Media',
+                icon: Icons.campaign_outlined,
+                allowedExtensions: const [
+                  'jpg',
+                  'jpeg',
+                  'png',
+                  'webp',
+                  'mp4',
+                  'mov',
+                  'm4v',
+                  'webm'
+                ],
+                onUploaded: (result) {
+                  setState(() {
+                    _boostMediaController.text = result.path;
+                    _infoMessage = 'Boost media uploaded to storage.';
+                  });
+                },
+              ),
+            ),
           TextField(
               controller: _boostMediaController,
-              decoration: const InputDecoration(labelText: 'Boost Media URL')),
+              decoration:
+                  const InputDecoration(labelText: 'Boost Media Path / URL')),
           TextField(
               controller: _boostHeadlineController,
               decoration: const InputDecoration(labelText: 'Headline')),

@@ -636,6 +636,47 @@ function requireSelfOrRole(context: RequestContext, targetUserId: string, allowe
   }
 }
 
+async function resolveMediaReference(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+
+  if (!value.startsWith('users/')) {
+    return value;
+  }
+
+  try {
+    return await storageService.createDownloadUrl(storageService.BUCKETS.media as BucketName, value);
+  } catch {
+    return value;
+  }
+}
+
+async function mapVendorStudioPayload(studio: any) {
+  return {
+    userId: studio.userId,
+    vendorName: studio.user.displayName,
+    country: studio.user.country,
+    state: studio.user.state,
+    category: studio.category,
+    profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
+    profileReelUrl: await resolveMediaReference(studio.profileReelUrl),
+    galleryUrls: await Promise.all(
+      (studio.galleryUrls ?? []).map((url: string) => resolveMediaReference(url)),
+    ),
+    verified: true,
+    servicePricing: studio.servicePricing.map((price: any) => ({
+      ...price,
+      amountUsd: Number(price.amountUsd),
+      createdAt: price.createdAt.toISOString(),
+    })),
+  };
+}
+
 export const resolvers = {
   User: {
     age: (parent: { birthday?: Date | null }) => ageFromBirthday(parent.birthday),
@@ -831,22 +872,7 @@ export const resolvers = {
       requireSelfOrRole(context, args.userId, ['admin', 'moderator']);
       const studio = await marketplaceTalentService.vendorStudio(args.userId);
       if (!studio) return null;
-      return {
-        userId: studio.userId,
-        vendorName: studio.user.displayName,
-        country: studio.user.country,
-        state: studio.user.state,
-        category: studio.category,
-        profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
-        profileReelUrl: studio.profileReelUrl,
-        galleryUrls: studio.galleryUrls,
-        verified: true,
-        servicePricing: studio.servicePricing.map((price: any) => ({
-          ...price,
-          amountUsd: Number(price.amountUsd),
-          createdAt: price.createdAt.toISOString(),
-        })),
-      };
+      return mapVendorStudioPayload(studio);
     },
     marketplaceDirectory: async (
       _: unknown,
@@ -860,22 +886,7 @@ export const resolvers = {
         category: args.category,
         limit: args.limit ?? 50,
       });
-      return rows.map((studio: any) => ({
-        userId: studio.userId,
-        vendorName: studio.user.displayName,
-        country: studio.user.country,
-        state: studio.user.state,
-        category: studio.category,
-        profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
-        profileReelUrl: studio.profileReelUrl,
-        galleryUrls: studio.galleryUrls,
-        verified: true,
-        servicePricing: studio.servicePricing.map((price: any) => ({
-          ...price,
-          amountUsd: Number(price.amountUsd),
-          createdAt: price.createdAt.toISOString(),
-        })),
-      }));
+      return Promise.all(rows.map((studio: any) => mapVendorStudioPayload(studio)));
     },
     homeTalentBanners: async (_: unknown, args: { userId: string; limit?: number }, context: RequestContext) => {
       requireSelfOrRole(context, args.userId, ['admin', 'moderator']);
@@ -1207,22 +1218,7 @@ export const resolvers = {
     ) => {
       requireSelfOrRole(context, args.userId, ['admin']);
       const studio = await marketplaceTalentService.upsertVendorStudio(args);
-      return {
-        userId: studio.userId,
-        vendorName: studio.user.displayName,
-        country: studio.user.country,
-        state: studio.user.state,
-        category: studio.category,
-        profilePictureUrl: studio.profilePictureUrl ?? studio.user.profilePictureUrl,
-        profileReelUrl: studio.profileReelUrl,
-        galleryUrls: studio.galleryUrls,
-        verified: true,
-        servicePricing: studio.servicePricing.map((price: any) => ({
-          ...price,
-          amountUsd: Number(price.amountUsd),
-          createdAt: price.createdAt.toISOString(),
-        })),
-      };
+      return mapVendorStudioPayload(studio);
     },
     upsertVendorServicePricing: async (
       _: unknown,

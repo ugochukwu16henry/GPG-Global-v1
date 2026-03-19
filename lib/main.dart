@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'core/providers/theme_mode_provider.dart';
 import 'features/admin/screens/admin_command_center_screen.dart';
 import 'features/auth/providers/session_provider.dart';
 import 'features/auth/screens/auth_entry_screen.dart';
@@ -9,7 +10,7 @@ import 'features/auth/screens/simple_info_screen.dart';
 import 'features/home/screens/app_flow_logic_map_screen.dart';
 import 'features/home/screens/deep_link_target_screen.dart';
 import 'features/home/screens/marketplace_success_screen.dart';
-import 'features/home/screens/user_app_shell_screen.dart';
+import 'features/home/screens/user_command_center_screen.dart';
 import 'features/home/screens/vendor_studio_screen.dart';
 import 'features/moderator/screens/moderator_dashboard_screen.dart';
 
@@ -132,7 +133,7 @@ class GpgGlobalApp extends ConsumerWidget {
         return denyAccess();
       }
       return MaterialPageRoute(
-          builder: (_) => const UserAppShellScreen(), settings: settings);
+          builder: (_) => const UserCommandCenterScreen(), settings: settings);
     }
 
     if (uri.path == '/vendor-studio') {
@@ -215,7 +216,7 @@ class GpgGlobalApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.light,
+      themeMode: ref.watch(themeModeProvider),
       onGenerateRoute: (settings) => _onGenerateRoute(settings, ref),
       initialRoute: '/',
     );

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -30,7 +31,8 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateVisibilityPlayback());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _updateVisibilityPlayback());
     final position = Scrollable.of(context).position;
     if (_scrollPosition != position) {
       _scrollPosition?.removeListener(_updateVisibilityPlayback);
@@ -90,6 +92,7 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final targetUserId = item.ownerUserId ?? item.id;
 
     return GlassCard(
       borderRadius: 12,
@@ -117,7 +120,9 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                     Center(
                       child: Icon(
                         item.isVideo
-                            ? (_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled)
+                            ? (_isPlaying
+                                ? Icons.pause_circle_filled
+                                : Icons.play_circle_filled)
                             : Icons.article_outlined,
                         size: 52,
                         color: AppColors.pathwayAmber.withValues(alpha: 0.95),
@@ -127,14 +132,20 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                       top: 10,
                       left: 10,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          _isPlaying ? (_isMuted ? 'Auto-play · Muted' : 'Auto-play · Sound On') : 'Paused',
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          _isPlaying
+                              ? (_isMuted
+                                  ? 'Auto-play · Muted'
+                                  : 'Auto-play · Sound On')
+                              : 'Paused',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 10),
                         ),
                       ),
                     ),
@@ -145,7 +156,8 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                         children: [
                           PopupMenuButton<String>(
                             tooltip: 'Video Quality',
-                            onSelected: (value) => setState(() => _selectedQuality = value),
+                            onSelected: (value) =>
+                                setState(() => _selectedQuality = value),
                             itemBuilder: (context) => _qualityOptions()
                                 .map(
                                   (quality) => PopupMenuItem<String>(
@@ -155,34 +167,42 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                                 )
                                 .toList(growable: false),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.black.withValues(alpha: 0.35),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
                                 _selectedQuality,
-                                style: const TextStyle(color: Colors.white, fontSize: 10),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 10),
                               ),
                             ),
                           ),
                           IconButton(
                             visualDensity: VisualDensity.compact,
                             icon: Icon(
-                              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                              _isMuted
+                                  ? Icons.volume_off_rounded
+                                  : Icons.volume_up_rounded,
                               size: 18,
                               color: Colors.white,
                             ),
-                            onPressed: () => setState(() => _isMuted = !_isMuted),
+                            onPressed: () =>
+                                setState(() => _isMuted = !_isMuted),
                           ),
                           IconButton(
                             visualDensity: VisualDensity.compact,
                             icon: Icon(
-                              _showCaptions ? Icons.closed_caption : Icons.closed_caption_disabled,
+                              _showCaptions
+                                  ? Icons.closed_caption
+                                  : Icons.closed_caption_disabled,
                               size: 18,
                               color: Colors.white,
                             ),
-                            onPressed: () => setState(() => _showCaptions = !_showCaptions),
+                            onPressed: () =>
+                                setState(() => _showCaptions = !_showCaptions),
                           ),
                         ],
                       ),
@@ -193,14 +213,16 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                         right: 12,
                         bottom: 76,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.55),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             item.autoCaptions.first,
-                            style: const TextStyle(color: Colors.white, fontSize: 11),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -262,26 +284,31 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
                             onSelected: (value) async {
-                              final controller = ref.read(boundaryControllerProvider.notifier);
+                              final controller =
+                                  ref.read(boundaryControllerProvider.notifier);
                               if (value == 'block') {
                                 await controller.blockUser(
-                                  blockedId: item.id,
+                                  blockedId: targetUserId,
                                   reasonCode: 'HARASSMENT',
                                 );
                               } else if (value == 'mute') {
-                                await controller.muteUser(mutedId: item.id);
+                                await controller.muteUser(
+                                    mutedId: targetUserId);
                               } else if (value == 'report') {
                                 await controller.reportUser(
-                                  reportedId: item.id,
+                                  reportedId: targetUserId,
                                   reasonCode: 'HARASSMENT',
                                   detail: 'Reported from feed card menu',
                                 );
                               }
                             },
                             itemBuilder: (context) => const [
-                              PopupMenuItem(value: 'block', child: Text('Block User')),
-                              PopupMenuItem(value: 'mute', child: Text('Mute User')),
-                              PopupMenuItem(value: 'report', child: Text('Report User')),
+                              PopupMenuItem(
+                                  value: 'block', child: Text('Block User')),
+                              PopupMenuItem(
+                                  value: 'mute', child: Text('Mute User')),
+                              PopupMenuItem(
+                                  value: 'report', child: Text('Report User')),
                             ],
                           ),
                         ],
@@ -296,8 +323,10 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                             .map(
                               (tag) => Chip(
                                 visualDensity: VisualDensity.compact,
-                                label: Text(tag, style: const TextStyle(fontSize: 10)),
-                                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                                label: Text(tag,
+                                    style: const TextStyle(fontSize: 10)),
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: 0.12),
                                 side: BorderSide.none,
                               ),
                             )
@@ -331,39 +360,60 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        if (item.hireEnabled || item.moderationTags.contains('Skill Showcase'))
+                        if (item.hireEnabled ||
+                            item.moderationTags.contains('Skill Showcase'))
                           Material(
                             color: AppColors.pathwayAmber,
                             borderRadius: BorderRadius.circular(8),
                             child: InkWell(
-                              onTap: () {},
+                              onTap: () {
+                                // Haptic feedback for tactile, thumb-friendly UX.
+                                HapticFeedback.lightImpact();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Hire request started.'),
+                                  ),
+                                );
+                              },
                               borderRadius: BorderRadius.circular(8),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.person_search, size: 16, color: AppColors.primaryNavy),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Hire this Talent',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                        color: AppColors.primaryNavy,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                child: SizedBox(
+                                  height: 48,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.person_search,
+                                          size: 16,
+                                          color: AppColors.primaryNavy),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Hire this Talent',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                          color: AppColors.primaryNavy,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         FilledButton.tonal(
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Reshared to Mission Peer / Gathering Place group.')),
+                              const SnackBar(
+                                  content: Text(
+                                      'Reshared to Mission Peer / Gathering Place group.')),
                             );
                           },
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           child: const Text('Forward Reshare'),
                         ),
                       ],

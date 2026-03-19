@@ -201,7 +201,7 @@ class BackendGateway {
     required String userId,
     required String displayName,
     required bool isMember,
-    required String missionId,
+    String? missionId,
     required bool servedMission,
     required String pathwayStatus,
     required bool isPathwayConnect,
@@ -284,6 +284,97 @@ class BackendGateway {
         'safeSearchVerifiedMembersOnly': safeSearchVerifiedMembersOnly,
       },
     );
+  }
+
+  Future<List<Map<String, dynamic>>> feed({int limit = 20}) async {
+    final data = await _query(
+      '''
+      query Feed(${r'$'}limit: Int) {
+        feed(limit: ${r'$'}limit) {
+          id
+          textBody
+          mediaUrl
+          skillHighlight
+          availableResolutions
+          captions
+          moderationTags
+          isBoosted
+          promotedAdId
+          author {
+            id
+            displayName
+            profilePictureUrl
+          }
+          warmLikes
+          prayerLikes
+          reshareCount
+          comments {
+            id
+            body
+            timestampSeconds
+            author {
+              id
+              displayName
+            }
+          }
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['feed'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> createPost({
+    required String authorUserId,
+    String? textBody,
+    String? mediaUrl,
+    String? skillHighlight,
+    List<String>? moderationTags,
+  }) async {
+    final data = await _query(
+      '''
+      mutation CreatePost(
+        ${r'$'}authorUserId: ID!,
+        ${r'$'}textBody: String,
+        ${r'$'}mediaUrl: String,
+        ${r'$'}skillHighlight: String,
+        ${r'$'}moderationTags: [String!]
+      ) {
+        createPost(
+          authorUserId: ${r'$'}authorUserId,
+          textBody: ${r'$'}textBody,
+          mediaUrl: ${r'$'}mediaUrl,
+          skillHighlight: ${r'$'}skillHighlight,
+          moderationTags: ${r'$'}moderationTags
+        ) {
+          id
+          textBody
+          mediaUrl
+          skillHighlight
+          moderationTags
+          author {
+            id
+            displayName
+            profilePictureUrl
+          }
+        }
+      }
+      ''',
+      variables: {
+        'authorUserId': authorUserId,
+        'textBody': textBody,
+        'mediaUrl': mediaUrl,
+        'skillHighlight': skillHighlight,
+        'moderationTags': moderationTags,
+      },
+    );
+
+    return data['createPost'] as Map<String, dynamic>;
   }
 
   Future<void> setFieldVisibility({

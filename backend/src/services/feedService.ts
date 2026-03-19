@@ -1,6 +1,27 @@
 import { prisma } from '../lib/prisma.js';
 import { moderationService } from './moderationService.js';
 import { boundaryService } from './boundaryService.js';
+import { storageService } from './storageService.js';
+
+async function resolveMediaReference(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+
+  if (!value.startsWith('users/')) {
+    return value;
+  }
+
+  try {
+    return await storageService.createDownloadUrl(storageService.BUCKETS.media, value);
+  } catch {
+    return value;
+  }
+}
 
 export const feedService = {
   async createPost({
@@ -225,16 +246,14 @@ export const feedService = {
       return false;
     });
 
-    const promotedPosts = promotedMatched.map((ad) => {
+    const promotedPosts = await Promise.all(promotedMatched.map(async (ad) => {
       const studio = studioByUserId.get(ad.userId);
       return {
       id: `boost-${ad.id}`,
       textBody: ad.headline ?? `Featured talent: ${ad.user.displayName}`,
-      mediaUrl:
-        ad.mediaUrl ||
-        studio?.profileReelUrl ||
-        studio?.galleryUrls?.[0] ||
-        null,
+      mediaUrl: await resolveMediaReference(
+        ad.mediaUrl || studio?.profileReelUrl || studio?.galleryUrls?.[0] || null,
+      ),
       skillHighlight: studio?.category ?? null,
       videoCodec: null,
       sourceResolution: null,
@@ -249,13 +268,18 @@ export const feedService = {
       reshares: [],
       isBoosted: true,
       promotedAdId: ad.id,
-    };});
+    };}));
+
+    const resolvedRows = await Promise.all(rows.map(async (post) => ({
+      ...post,
+      mediaUrl: await resolveMediaReference(post.mediaUrl),
+    })));
 
     if (blockedIds.size == 0) {
-      return [...promotedPosts, ...rows].slice(0, limit);
+      return [...promotedPosts, ...resolvedRows].slice(0, limit);
     }
 
-    const filteredRows = rows
+    const filteredRows = resolvedRows
       .map((post) => ({
         ...post,
         comments: post.comments.filter((comment) => !blockedIds.has(comment.userId)),

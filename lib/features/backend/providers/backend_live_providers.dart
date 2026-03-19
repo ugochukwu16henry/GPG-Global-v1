@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/session_provider.dart';
+import '../../storage/services/storage_service.dart';
 import '../api/backend_gateway.dart';
 import '../api/backend_realtime_service.dart';
 
@@ -30,6 +31,25 @@ final backendGatewayProvider = Provider<BackendGateway>((ref) {
     userId: ref.watch(backendUserIdProvider),
     role: role,
     authToken: session.sessionToken,
+  );
+});
+
+final storageServiceProvider = Provider<StorageService?>((ref) {
+  final session = ref.watch(sessionControllerProvider);
+  final userId = ref.watch(backendUserIdProvider);
+  final token = session.sessionToken;
+
+  if (!session.isAuthenticated ||
+      token == null ||
+      token.isEmpty ||
+      userId == 'anonymous') {
+    return null;
+  }
+
+  return StorageService(
+    backendUrl: ref.watch(backendBaseUrlProvider),
+    authToken: token,
+    userId: userId,
   );
 });
 
@@ -92,14 +112,12 @@ class BackendDemoController extends StateNotifier<BackendDemoState> {
     try {
       final gateway = _read.read(backendGatewayProvider);
       final suggestions = await gateway.suggestMissions(queryText);
-      var summary = '';
-      if (suggestions.isNotEmpty) {
-        summary = await gateway.missionPeerMatchSummary('demo-mission-id');
-      }
       state = state.copyWith(
         isLoading: false,
         missionSuggestions: suggestions,
-        peerMatchSummary: summary.isEmpty ? null : summary,
+        peerMatchSummary: suggestions.isEmpty
+            ? null
+            : 'Found ${suggestions.length} mission suggestions for "$queryText".',
       );
     } catch (error) {
       state = state.copyWith(

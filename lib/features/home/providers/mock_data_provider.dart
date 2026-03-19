@@ -70,8 +70,8 @@ class ProfileState {
     }
     final now = DateTime.now();
     var years = now.year - birthday!.year;
-    final hadBirthday =
-        now.month > birthday!.month || (now.month == birthday!.month && now.day >= birthday!.day);
+    final hadBirthday = now.month > birthday!.month ||
+        (now.month == birthday!.month && now.day >= birthday!.day);
     if (!hadBirthday) {
       years -= 1;
     }
@@ -119,7 +119,8 @@ class ProfileState {
       safeSearchFemaleOnly: safeSearchFemaleOnly ?? this.safeSearchFemaleOnly,
       safeSearchVerifiedMembersOnly:
           safeSearchVerifiedMembersOnly ?? this.safeSearchVerifiedMembersOnly,
-      allowsBirthdayBroadcast: allowsBirthdayBroadcast ?? this.allowsBirthdayBroadcast,
+      allowsBirthdayBroadcast:
+          allowsBirthdayBroadcast ?? this.allowsBirthdayBroadcast,
       missionName: missionName ?? this.missionName,
       servedMission: servedMission ?? this.servedMission,
       memberStatusLabel: memberStatusLabel ?? this.memberStatusLabel,
@@ -130,12 +131,17 @@ class ProfileState {
   }
 }
 
-final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
+final profileProvider =
+    StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
   return ProfileNotifier();
 });
 
 class ProfileNotifier extends StateNotifier<ProfileState> {
   ProfileNotifier() : super(const ProfileState());
+
+  void setProfilePictureUrl(String url) {
+    state = state.copyWith(profilePictureUrl: url);
+  }
 
   void toggleStatus() {
     state = state.copyWith(
@@ -188,6 +194,7 @@ class FeedItem {
   const FeedItem({
     required this.id,
     required this.title,
+    this.ownerUserId,
     this.subtitle,
     this.isVideo = true,
     this.avatarUrl,
@@ -201,6 +208,7 @@ class FeedItem {
 
   final String id;
   final String title;
+  final String? ownerUserId;
   final String? subtitle;
   final bool isVideo;
   final String? avatarUrl;
@@ -379,10 +387,12 @@ final _allMarketplaceListings = [
 ];
 
 /// Selected marketplace category for the demo filter pill row.
-final selectedMarketplaceCategoryProvider = StateProvider<String?>((ref) => null);
+final selectedMarketplaceCategoryProvider =
+    StateProvider<String?>((ref) => null);
 
 /// Filtered marketplace listings based on selected category.
-final filteredMarketplaceListingsProvider = Provider<List<MarketplaceListing>>((ref) {
+final filteredMarketplaceListingsProvider =
+    Provider<List<MarketplaceListing>>((ref) {
   final selected = ref.watch(selectedMarketplaceCategoryProvider);
   if (selected == null) {
     return _allMarketplaceListings;
@@ -406,7 +416,8 @@ class MissionPeerChatPreviewMessage {
   final bool isMine;
 }
 
-final missionPeerChatPreviewProvider = Provider<List<MissionPeerChatPreviewMessage>>((ref) {
+final missionPeerChatPreviewProvider =
+    Provider<List<MissionPeerChatPreviewMessage>>((ref) {
   return const [
     MissionPeerChatPreviewMessage(
       id: 'c1',
@@ -431,4 +442,3 @@ final missionPeerChatPreviewProvider = Provider<List<MissionPeerChatPreviewMessa
     ),
   ];
 });
-
