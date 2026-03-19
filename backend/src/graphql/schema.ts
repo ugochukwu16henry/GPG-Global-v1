@@ -284,6 +284,52 @@ export const typeDefs = `
     createdAt: String!
   }
 
+  type MarketplaceApprovalRecord {
+    id: ID!
+    userId: ID!
+    certificateTitle: String!
+    status: String!
+    reviewedByAdminId: ID
+    reviewedAt: String
+    createdAt: String!
+  }
+
+  type TalentFeatureRecord {
+    id: ID!
+    userId: ID!
+    isFeatured: Boolean!
+    updatedByAdminId: ID!
+    updatedAt: String!
+  }
+
+  type AdModerationReviewRecord {
+    id: ID!
+    externalAdId: String!
+    targeting: String!
+    note: String
+    status: String!
+    reviewedByAdminId: ID
+    reviewedAt: String
+    createdAt: String!
+  }
+
+  type UserDisciplineRecord {
+    userId: ID!
+    suspendedUntil: String
+    isShadowBanned: Boolean!
+    isDeletedBanned: Boolean!
+    updatedAt: String!
+  }
+
+  type BannedIdentityRecord {
+    id: ID!
+    phone: String
+    deviceId: String
+    reason: String!
+    bannedByAdminId: ID!
+    createdAt: String!
+  }
+
   type MarketplaceCheckout {
     checkoutUrl: String!
   }
@@ -322,6 +368,11 @@ export const typeDefs = `
     breakGlassBundles(limit: Int = 20): [BreakGlassReportBundle!]!
     moderatorInviteCodes(limit: Int = 20): [ModeratorInviteCode!]!
     adminActionLogs(limit: Int = 50): [AdminActionLog!]!
+    marketplaceApprovals(limit: Int = 50): [MarketplaceApprovalRecord!]!
+    talentFeatures(limit: Int = 50): [TalentFeatureRecord!]!
+    adModerationReviews(limit: Int = 50): [AdModerationReviewRecord!]!
+    userDisciplineStates(limit: Int = 100): [UserDisciplineRecord!]!
+    bannedIdentities(limit: Int = 100): [BannedIdentityRecord!]!
     readSensitiveField(ownerUserId: ID!, field: SensitiveField!): String
   }
 
@@ -657,6 +708,49 @@ export const resolvers = {
     adminActionLogs: (_: unknown, args: { limit?: number }, context: RequestContext) => {
       requireRole(context, ['admin']);
       return adminService.recentLogs(args.limit ?? 50);
+    },
+    marketplaceApprovals: async (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      const rows = await adminService.marketplaceApprovals(args.limit ?? 50);
+      return rows.map((row: any) => ({
+        ...row,
+        reviewedAt: row.reviewedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      }));
+    },
+    talentFeatures: async (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      const rows = await adminService.talentFeatures(args.limit ?? 50);
+      return rows.map((row: any) => ({
+        ...row,
+        updatedAt: row.updatedAt.toISOString(),
+      }));
+    },
+    adModerationReviews: async (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      const rows = await adminService.adModerationReviews(args.limit ?? 50);
+      return rows.map((row: any) => ({
+        ...row,
+        reviewedAt: row.reviewedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      }));
+    },
+    userDisciplineStates: async (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      const rows = await adminService.userDisciplineStates(args.limit ?? 100);
+      return rows.map((row: any) => ({
+        ...row,
+        suspendedUntil: row.suspendedUntil?.toISOString() ?? null,
+        updatedAt: row.updatedAt.toISOString(),
+      }));
+    },
+    bannedIdentities: async (_: unknown, args: { limit?: number }, context: RequestContext) => {
+      requireRole(context, ['admin']);
+      const rows = await adminService.bannedIdentities(args.limit ?? 100);
+      return rows.map((row: any) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      }));
     },
     readSensitiveField: (_: unknown, args: { ownerUserId: string; field: 'GENOTYPE' | 'BLOOD_GROUP' }, context: RequestContext) => {
       requireAuthenticated(context);

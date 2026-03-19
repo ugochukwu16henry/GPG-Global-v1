@@ -772,6 +772,125 @@ class BackendGateway {
         .toList(growable: false);
   }
 
+  Future<List<Map<String, dynamic>>> marketplaceApprovals(
+      {int limit = 50}) async {
+    final data = await _query(
+      '''
+      query MarketplaceApprovals(${r'$'}limit: Int) {
+        marketplaceApprovals(limit: ${r'$'}limit) {
+          id
+          userId
+          certificateTitle
+          status
+          reviewedByAdminId
+          reviewedAt
+          createdAt
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['marketplaceApprovals'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> talentFeatures({int limit = 50}) async {
+    final data = await _query(
+      '''
+      query TalentFeatures(${r'$'}limit: Int) {
+        talentFeatures(limit: ${r'$'}limit) {
+          id
+          userId
+          isFeatured
+          updatedByAdminId
+          updatedAt
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['talentFeatures'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> adModerationReviews(
+      {int limit = 50}) async {
+    final data = await _query(
+      '''
+      query AdModerationReviews(${r'$'}limit: Int) {
+        adModerationReviews(limit: ${r'$'}limit) {
+          id
+          externalAdId
+          targeting
+          note
+          status
+          reviewedByAdminId
+          reviewedAt
+          createdAt
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['adModerationReviews'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> userDisciplineStates(
+      {int limit = 100}) async {
+    final data = await _query(
+      '''
+      query UserDisciplineStates(${r'$'}limit: Int) {
+        userDisciplineStates(limit: ${r'$'}limit) {
+          userId
+          suspendedUntil
+          isShadowBanned
+          isDeletedBanned
+          updatedAt
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['userDisciplineStates'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> bannedIdentities({int limit = 100}) async {
+    final data = await _query(
+      '''
+      query BannedIdentities(${r'$'}limit: Int) {
+        bannedIdentities(limit: ${r'$'}limit) {
+          id
+          phone
+          deviceId
+          reason
+          bannedByAdminId
+          createdAt
+        }
+      }
+      ''',
+      variables: {'limit': limit},
+    );
+
+    final items = data['bannedIdentities'] as List<dynamic>;
+    return items
+        .map((e) => (e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
   Future<void> blockUser({
     required String blockerId,
     required String blockedId,

@@ -255,4 +255,39 @@ export const adminService = {
       take: limit,
     });
   },
+
+  async marketplaceApprovals(limit: number) {
+    return prisma.marketplaceApproval.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  },
+
+  async talentFeatures(limit: number) {
+    return prisma.talentFeature.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    });
+  },
+
+  async adModerationReviews(limit: number) {
+    return prisma.adModerationReview.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  },
+
+  async userDisciplineStates(limit: number) {
+    return prisma.userDisciplineState.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    });
+  },
+
+  async bannedIdentities(limit: number) {
+    return prisma.bannedIdentity.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  },
 };

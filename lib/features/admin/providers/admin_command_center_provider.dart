@@ -515,6 +515,16 @@ class AdminCommandController {
       _ref.read(adminCommandErrorProvider.notifier).state = null;
 
       final users = await gateway.communitySearch();
+      final disciplineRows = await gateway.userDisciplineStates(limit: 200);
+      final approvalRows = await gateway.marketplaceApprovals(limit: 200);
+      final talentRows = await gateway.talentFeatures(limit: 200);
+      final adRows = await gateway.adModerationReviews(limit: 200);
+      final bannedRows = await gateway.bannedIdentities(limit: 200);
+
+      final disciplineByUser = {
+        for (final row in disciplineRows) (row['userId'] ?? '').toString(): row,
+      };
+
       final vault = users
           .map(
             (user) => VaultUserMetadata(
@@ -542,24 +552,71 @@ class AdminCommandController {
           )
           .toList(growable: false);
 
-      final managed = users
+      final userNameById = {
+        for (final user in users)
+          (user['id'] ?? '').toString():
+              (user['displayName'] ?? 'Unknown').toString(),
+      };
+
+      final managed = users.map(
+        (user) {
+          final userId = (user['id'] ?? '').toString();
+          final discipline =
+              disciplineByUser[userId] ?? const <String, dynamic>{};
+          return ManagedUser(
+            id: userId,
+            displayName: (user['displayName'] ?? 'Unknown').toString(),
+            phone: '',
+            deviceId: '',
+            isSuspended:
+                (discipline['suspendedUntil'] ?? '').toString().isNotEmpty,
+            isShadowBanned: discipline['isShadowBanned'] == true,
+            isDeletedBanned: discipline['isDeletedBanned'] == true,
+          );
+        },
+      ).toList(growable: false);
+
+      final talents = talentRows
           .map(
-            (user) => ManagedUser(
-              id: (user['id'] ?? '').toString(),
-              displayName: (user['displayName'] ?? 'Unknown').toString(),
-              phone: '',
-              deviceId: '',
+            (row) => TalentTierProfile(
+              id: (row['userId'] ?? '').toString(),
+              displayName:
+                  userNameById[(row['userId'] ?? '').toString()] ?? 'Unknown',
+              rating: 4.0,
+              isFeatured: row['isFeatured'] == true,
             ),
           )
           .toList(growable: false);
 
-      final talents = users
-          .where((u) => ((u['academicFocus'] ?? '').toString()).isNotEmpty)
+      final applicants = approvalRows
           .map(
-            (user) => TalentTierProfile(
-              id: (user['id'] ?? '').toString(),
-              displayName: (user['displayName'] ?? 'Unknown').toString(),
-              rating: 4.0,
+            (row) => MarketplaceApplicant(
+              id: (row['userId'] ?? '').toString(),
+              displayName:
+                  userNameById[(row['userId'] ?? '').toString()] ?? 'Unknown',
+              skillCertificate:
+                  (row['certificateTitle'] ?? 'Unknown Certificate').toString(),
+              hasPaid: true,
+              approved: (row['status'] ?? '').toString() == 'APPROVED' ||
+                  (row['status'] ?? '').toString() == 'MERIT_GRANTED',
+              meritGranted: (row['status'] ?? '').toString() == 'MERIT_GRANTED',
+            ),
+          )
+          .toList(growable: false);
+
+      final ads = adRows
+          .map(
+            (row) => AdSubmission(
+              id: (row['externalAdId'] ?? '').toString(),
+              title: 'Ad ${(row['externalAdId'] ?? '').toString()}',
+              creativeType: 'Unknown',
+              copyText: (row['note'] ?? 'No ad copy provided').toString(),
+              targeting: (row['targeting'] ?? 'General').toString(),
+              status: (row['status'] ?? '').toString() == 'APPROVED'
+                  ? AdModerationStatus.approved
+                  : (row['status'] ?? '').toString() == 'REJECTED'
+                      ? AdModerationStatus.rejected
+                      : AdModerationStatus.pending,
             ),
           )
           .toList(growable: false);
@@ -567,6 +624,17 @@ class AdminCommandController {
       _ref.read(vaultUsersProvider.notifier).state = vault;
       _ref.read(managedUsersProvider.notifier).state = managed;
       _ref.read(talentTieringProvider.notifier).state = talents;
+      _ref.read(marketplaceApplicantsProvider.notifier).state = applicants;
+      _ref.read(adSubmissionProvider.notifier).state = ads;
+
+      _ref.read(blacklistedPhonesProvider.notifier).state = bannedRows
+          .map((row) => (row['phone'] ?? '').toString())
+          .where((value) => value.isNotEmpty)
+          .toSet();
+      _ref.read(blacklistedDevicesProvider.notifier).state = bannedRows
+          .map((row) => (row['deviceId'] ?? '').toString())
+          .where((value) => value.isNotEmpty)
+          .toSet();
 
       final breakGlass = _ref.read(breakGlassDeskControllerProvider.notifier);
       await breakGlass.refresh();
