@@ -92,7 +92,7 @@ class RightContextSidebar extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Trending Talents',
+                'Trending Talents in Your Country',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
@@ -152,7 +152,7 @@ class RightContextSidebar extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'My Study Group Chat',
+                'My Study Group Chat Shortcuts',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,

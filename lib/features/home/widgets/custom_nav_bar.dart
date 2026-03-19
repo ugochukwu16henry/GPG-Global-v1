@@ -20,10 +20,10 @@ class CustomNavBar extends StatelessWidget {
 
   static const List<_NavEntry> _items = [
     _NavEntry(NavItem.home, Icons.home_rounded, 'Home'),
-    _NavEntry(NavItem.peerSearch, Icons.person_search_rounded, 'Mission'),
+    _NavEntry(NavItem.peerSearch, Icons.person_search_rounded, 'Peers'),
     _NavEntry(NavItem.marketplace, Icons.storefront_rounded, 'Marketplace'),
-    _NavEntry(NavItem.studyGroups, Icons.groups_rounded, 'Study Groups'),
-    _NavEntry(NavItem.profile, Icons.person_rounded, 'Profile'),
+    _NavEntry(NavItem.studyGroups, Icons.school_rounded, 'Academy'),
+    _NavEntry(NavItem.profile, Icons.settings_rounded, 'Settings'),
   ];
 
   @override
@@ -71,8 +71,10 @@ class CustomNavBar extends StatelessWidget {
                             decoration: isMarketplace
                                 ? BoxDecoration(
                                     color: selected
-                                        ? AppColors.pathwayAmber.withValues(alpha: 0.95)
-                                        : AppColors.pathwayAmber.withValues(alpha: 0.25),
+                                        ? AppColors.pathwayAmber
+                                            .withValues(alpha: 0.95)
+                                        : AppColors.pathwayAmber
+                                            .withValues(alpha: 0.25),
                                     borderRadius: BorderRadius.circular(999),
                                   )
                                 : const BoxDecoration(),
@@ -81,7 +83,9 @@ class CustomNavBar extends StatelessWidget {
                               size: 22,
                               color: isMarketplace
                                   ? AppColors.primaryNavy
-                                  : (selected ? AppColors.primaryNavy : AppColors.textMuted),
+                                  : (selected
+                                      ? AppColors.primaryNavy
+                                      : AppColors.textMuted),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -89,8 +93,11 @@ class CustomNavBar extends StatelessWidget {
                             entry.label,
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                              color: selected ? AppColors.primaryNavy : AppColors.textMuted,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                              color: selected
+                                  ? AppColors.primaryNavy
+                                  : AppColors.textMuted,
                             ),
                           ),
                         ],
