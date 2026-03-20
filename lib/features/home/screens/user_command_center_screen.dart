@@ -101,6 +101,83 @@ class _UserCommandCenterScreenState
     }
   }
 
+  void _openMobileFiltersAndMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Filters & Menu',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primaryNavy,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _SurfaceTab.values.map((tab) {
+                    final selected = _tab == tab;
+                    final label = switch (tab) {
+                      _SurfaceTab.home => 'Home',
+                      _SurfaceTab.peers => 'Peers',
+                      _SurfaceTab.marketplace => 'Marketplace',
+                      _SurfaceTab.academy => 'Academy',
+                      _SurfaceTab.settings => 'Settings',
+                    };
+                    return ChoiceChip(
+                      selected: selected,
+                      label: Text(label),
+                      onSelected: (_) {
+                        setState(() => _tab = tab);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(growable: false),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.security_rounded),
+                  title: const Text('Privacy & Safety'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const PrivacySafetyScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.storefront_rounded),
+                  title: const Text('Open Vendor Studio'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushNamed('/vendor-studio');
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.sizeOf(context).width > 768;
@@ -191,110 +268,124 @@ class _UserCommandCenterScreenState
     final profile = ref.watch(profileProvider);
     final themeMode = ref.watch(themeModeProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.surfaceWhite,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 132,
-            backgroundColor: AppColors.surfaceWhite,
-            surfaceTintColor: Colors.transparent,
-            title: Row(
-              children: [
-                const GNexusLogo(size: 28),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    profile.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.primaryNavy,
-                      fontWeight: FontWeight.w800,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: Theme.of(context).textTheme.apply(fontSizeFactor: 1.08),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.surfaceWhite,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              expandedHeight: 132,
+              backgroundColor: AppColors.surfaceWhite,
+              surfaceTintColor: Colors.transparent,
+              title: Row(
+                children: [
+                  const GNexusLogo(size: 28),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      profile.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.primaryNavy,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  onPressed: _openMobileFiltersAndMenu,
+                  icon: const Icon(Icons.tune_rounded),
+                ),
+                IconButton(
+                  onPressed: () {
+                    ref.read(themeModeProvider.notifier).state =
+                        themeMode == ThemeMode.dark
+                            ? ThemeMode.light
+                            : ThemeMode.dark;
+                  },
+                  icon: Icon(
+                    themeMode == ThemeMode.dark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _signOut,
+                  icon: const Icon(Icons.logout_rounded),
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 64, 16, 16),
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Thumb-first GPG Command Center',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${session.identity == CommunityIdentity.member ? 'Member' : 'Friend / Seeker'} · ${profile.state}, ${profile.country}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryNavy,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-            actions: [
-              IconButton(
-                onPressed: () {
-                  ref.read(themeModeProvider.notifier).state =
-                      themeMode == ThemeMode.dark
-                          ? ThemeMode.light
-                          : ThemeMode.dark;
-                },
-                icon: Icon(
-                  themeMode == ThemeMode.dark
-                      ? Icons.dark_mode_rounded
-                      : Icons.light_mode_rounded,
-                ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                _tab == _SurfaceTab.home ? 0 : 16,
+                12,
+                _tab == _SurfaceTab.home ? 0 : 16,
+                100,
               ),
-              IconButton(
-                onPressed: _signOut,
-                icon: const Icon(Icons.logout_rounded),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 64, 16, 16),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Thumb-first GPG Command Center',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${session.identity == CommunityIdentity.member ? 'Member' : 'Friend / Seeker'} · ${profile.state}, ${profile.country}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryNavy,
-                        ),
-                      ),
-                    ],
+              sliver: SliverToBoxAdapter(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _MobileTabBody(
+                    key: ValueKey(_tab),
+                    tab: _tab,
+                    postBodyController: _postBodyController,
+                    messageController: _messageController,
+                    onPublishPost: _publishPost,
+                    onSendMessage: _sendGuardedMessage,
                   ),
                 ),
               ),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            sliver: SliverToBoxAdapter(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _MobileTabBody(
-                  key: ValueKey(_tab),
-                  tab: _tab,
-                  postBodyController: _postBodyController,
-                  messageController: _messageController,
-                  onPublishPost: _publishPost,
-                  onSendMessage: _sendGuardedMessage,
-                ),
-              ),
+          ],
+        ),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: CustomNavBar(
+              currentIndex: _tab.index,
+              onTap: _setMobileTab,
+              marketplaceIndex: 2,
+              elevateMarketplace: true,
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: CustomNavBar(
-            currentIndex: _tab.index,
-            onTap: _setMobileTab,
-            marketplaceIndex: 2,
-            elevateMarketplace: true,
           ),
         ),
       ),

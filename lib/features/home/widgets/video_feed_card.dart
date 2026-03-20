@@ -362,6 +362,18 @@ class _VideoFeedCardState extends ConsumerState<VideoFeedCard> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        FilledButton.tonal(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Liked.')),
+                            );
+                          },
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
+                          child: const Text('Like'),
+                        ),
                         if (item.hireEnabled ||
                             item.moderationTags.contains('Skill Showcase'))
                           Material(
