@@ -1,11 +1,11 @@
 {
-    "name": "gpg_global",
-    "short_name": "gpg_global",
+    "name": "GPG Gathering Place Global",
+    "short_name": "GPG Global",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F9F9F9",
+    "theme_color": "#002E5D",
+    "description": "A faith-centered digital sanctuary for community, education, and trusted talent discovery.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

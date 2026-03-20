@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../backend/providers/backend_live_providers.dart';
 import '../providers/session_provider.dart';
+import '../../home/widgets/g_nexus_logo.dart';
 import '../../home/widgets/glass_card.dart';
 
 enum AuthEntryMode {
@@ -189,11 +190,9 @@ class _AuthEntryScreenState extends ConsumerState<AuthEntryScreen> {
                         top: -40,
                         child: Opacity(
                           opacity: 0.22,
-                          child: Image.asset(
-                            'GP_Global_logo.png',
-                            width: 420,
-                            height: 420,
-                            fit: BoxFit.contain,
+                          child: const GNexusLogo(
+                            size: 220,
+                            variant: LogoSurfaceVariant.birthdayGlow,
                           ),
                         ),
                       ),

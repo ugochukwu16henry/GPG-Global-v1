@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../home/widgets/g_nexus_logo.dart';
 
 class MarketingLandingScreen extends StatelessWidget {
   const MarketingLandingScreen({super.key});
@@ -21,15 +22,7 @@ class MarketingLandingScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'GP_Global_logo.png',
-                          width: 36,
-                          height: 36,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      const GNexusLogo(size: 36),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
@@ -87,15 +80,7 @@ class MarketingLandingScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(
-                            'GP_Global_logo.png',
-                            width: 92,
-                            height: 92,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                        const GNexusLogo(size: 92),
                         const SizedBox(height: 14),
                         Text(
                           'A Safe, Spiritual, and Social Community',

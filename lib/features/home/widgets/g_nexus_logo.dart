@@ -8,7 +8,7 @@ enum LogoSurfaceVariant {
   birthdayGlow,
 }
 
-/// G-Nexus logo with pulse animation in the header.
+/// Shared app logo surface with pulse animation.
 class GNexusLogo extends StatefulWidget {
   const GNexusLogo({
     super.key,
@@ -48,11 +48,11 @@ class _GNexusLogoState extends State<GNexusLogo>
 
   @override
   Widget build(BuildContext context) {
-    final (background, border, textColor) = switch (widget.variant) {
+    final (background, border, imageTint) = switch (widget.variant) {
       LogoSurfaceVariant.appIcon => (
           AppColors.primaryNavy.withValues(alpha: 0.9),
           AppColors.pathwayAmber.withValues(alpha: 0.5),
-          AppColors.pathwayAmber,
+          null,
         ),
       LogoSurfaceVariant.controlRoomMonochrome => (
           Colors.white.withValues(alpha: 0.15),
@@ -62,9 +62,18 @@ class _GNexusLogoState extends State<GNexusLogo>
       LogoSurfaceVariant.birthdayGlow => (
           AppColors.primaryNavy.withValues(alpha: 0.9),
           AppColors.surfaceWhite.withValues(alpha: 0.8),
-          AppColors.pathwayAmber,
+          null,
         ),
     };
+
+    final image = Image.asset(
+      'GP_Global_logo.png',
+      width: widget.size,
+      height: widget.size,
+      fit: BoxFit.contain,
+      color: imageTint,
+      colorBlendMode: imageTint == null ? null : BlendMode.srcIn,
+    );
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
@@ -81,6 +90,7 @@ class _GNexusLogoState extends State<GNexusLogo>
           child: Container(
             width: widget.size,
             height: widget.size,
+            padding: EdgeInsets.all(widget.size * 0.1),
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(10),
@@ -99,15 +109,7 @@ class _GNexusLogoState extends State<GNexusLogo>
                   : null,
             ),
             alignment: Alignment.center,
-            child: Text(
-              'G',
-              style: TextStyle(
-                color: textColor,
-                fontSize: widget.size * 0.55,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1,
-              ),
-            ),
+            child: image,
           ),
         ),
       ),
